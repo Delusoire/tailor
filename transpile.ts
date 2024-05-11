@@ -24,9 +24,7 @@ export class Transpiler {
 			jsc: {
 				baseUrl: ".",
 				experimental: {
-					plugins: [
-						["swc-remapper", { classmap: { CLASSMAP: this.classmap } }]
-					],
+					plugins: [["swc-remapper", { classmap: { CLASSMAP: this.classmap } }]],
 				},
 				parser: {
 					syntax: "typescript",
@@ -38,8 +36,8 @@ export class Transpiler {
 				transform: {
 					decoratorVersion: "2022-03",
 					react: {
-						pragma: "S.React.createElement",
-						pragmaFrag: "S.React.Fragment",
+						pragma: "React.createElement",
+						pragmaFrag: "React.Fragment",
 					},
 				},
 				loose: false,
