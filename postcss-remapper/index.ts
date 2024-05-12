@@ -14,36 +14,36 @@
  */
 
 import selectorParser from "postcss-selector-parser";
-import { ClassMap } from "../transpile";
+import type { ClassMap } from "../transpile.js";
 
 namespace plugin {
-	export interface Options {
-		classmap: ClassMap;
-	}
+   export interface Options {
+      classmap: ClassMap;
+   }
 }
 
 export default function ({ classmap }: plugin.Options) {
-	return {
-		postcssPlugin: "postcss-remapper",
-		prepare() {
-			function renameNode(node: selectorParser.ClassName) {
-				const newName = node.value.split("__").reduce((obj, prop) => obj[prop.replace("-", "_")], classmap);
-				if (typeof newName === "string") {
-					node.value = newName;
-				}
-			}
+   return {
+      postcssPlugin: "postcss-remapper",
+      prepare() {
+         function renameNode(node: selectorParser.ClassName) {
+            const newName = node.value.split("__").reduce((obj, prop) => obj[prop.replace("-", "_")], classmap);
+            if (typeof newName === "string") {
+               node.value = newName;
+            }
+         }
 
-			const selectorProcessor = selectorParser(selectors => {
-				selectors.walkClasses(renameNode);
-			});
+         const selectorProcessor = selectorParser(selectors => {
+            selectors.walkClasses(renameNode);
+         });
 
-			return {
-				Rule(ruleNode) {
-					if (ruleNode.parent.type !== "atrule" || !ruleNode.parent.name.endsWith("keyframes")) {
-						selectorProcessor.process(ruleNode);
-					}
-				},
-			};
-		},
-	};
+         return {
+            Rule(ruleNode) {
+               if (ruleNode.parent.type !== "atrule" || !ruleNode.parent.name.endsWith("keyframes")) {
+                  selectorProcessor.process(ruleNode);
+               }
+            },
+         };
+      },
+   };
 }

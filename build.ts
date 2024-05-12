@@ -1,84 +1,67 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 
-import { Glob } from "bun";
+import open from "open";
 
-import debounce from "lodash/debounce";
-import { type ClassMap, Transpiler } from "./transpile";
+import debounce from "lodash/debounce.js";
+import { Transpiler } from "./transpile.js";
 
-const reloadSpotifyDocument = debounce(
-   () =>
-      Bun.spawn({
-         cmd: [
-            "pwsh",
-            "-NoProfile",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-EncodedCommand",
-            Buffer.from("Start-Process -Wait spotify:app:rpc:reload", "utf-16le").toString("base64"),
-         ],
-         stdout: "pipe",
-      }),
-   3000,
-);
+const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
 
-function readJSON<T>(path: string | URL): Promise<Awaited<T>> {
-   return Bun.file(path).json();
+export type Metadata = any;
+
+export class Builder {
+   cssEntry: string;
+
+   private static jsGlob = "./**/*.{ts,tsx}";
+
+   public constructor(private metadata: Metadata, private transpiler: Transpiler) {
+      this.cssEntry = metadata.entries.css?.replace(/\.css$/, ".scss");
+   }
+
+   public async js(files?: string[]) {
+      if (!files) {
+         files = await Array.fromAsync(fs.glob(Builder.jsGlob));
+         files = files.filter(f => !f.includes("node_modules"));
+      }
+
+      return Promise.all(files.map(file => this.transpiler.js(file)));
+   }
+
+   public async css() {
+      if (!this.cssEntry) {
+         return;
+      }
+
+      return this.transpiler.css(this.cssEntry, [Builder.jsGlob]);
+   }
 }
 
-// TODO: add cli options for these
-const classmap = await readJSON<ClassMap>("./classmap.json");
-const metadata = await readJSON<any>("./metadata.json");
+export class Watcher {
+   constructor(private builder: Builder) {}
 
-const transpiler = new Transpiler(classmap);
-
-async function initialBuild() {
-   const toJsGlob = "./**/*.{ts,tsx}";
-   const cssEntry = metadata.entries.css;
-   if (cssEntry) {
-      const toCssFile = cssEntry.replace(/\.css$/, ".scss");
-      await transpiler.toCSS(toCssFile, [toJsGlob]);
-   }
-   const toJsFiles = new Glob(toJsGlob).scan(".");
-   for await (const toJsFile of toJsFiles) {
-      if (toJsFile.includes("node_modules")) continue;
-      await transpiler.toJS(toJsFile);
-   }
-   reloadSpotifyDocument();
-}
-
-async function watchBuild() {
-   const watcher = fs.watch(".", { recursive: true });
-   for await (const event of watcher) {
-      const { filename, eventType } = event;
-      console.log(`${filename} was ${eventType}d`);
-      switch (path.extname(filename!)) {
+   private async onFsFileChange(event: fs.FileChangeInfo<string>) {
+      switch (path.extname(event.filename!)) {
          case ".scss": {
-            const toJsGlob = "./**/*.{ts,tsx}";
-            const cssEntry = metadata.entries.css;
-            if (cssEntry) {
-               const toCssFile = cssEntry.replace(/\.css$/, ".scss");
-               await transpiler.toCSS(toCssFile, [toJsGlob]);
-            }
+            await this.builder.css();
             reloadSpotifyDocument();
             break;
          }
          case ".ts":
          case ".tsx": {
-            await transpiler.toJS(filename!);
+            await this.builder.js([event.filename!]);
             reloadSpotifyDocument();
             break;
          }
       }
    }
+
+   public async watch() {
+      console.log("Watching for changes...");
+      const watcher = fs.watch(".", { recursive: true });
+      for await (const event of watcher) {
+         console.log(`${event.filename} was ${event.eventType}d`);
+         await this.onFsFileChange(event);
+      }
+   }
 }
-
-const timeStart = Date.now();
-
-await initialBuild();
-
-console.log(`Build finished in ${(Date.now() - timeStart) / 1000}s!`);
-console.log("Watching for further changes");
-
-await watchBuild();
