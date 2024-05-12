@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use swc_core::common::SyntaxContext;
 use swc_core::ecma::ast::{Expr, Lit, MemberProp};
-use swc_core::ecma::visit::{as_folder, noop_visit_mut_type, VisitMut};
+use swc_core::ecma::visit::{as_folder, noop_visit_mut_type, VisitMut, VisitMutWith};
 use swc_core::ecma::{ast::Program, visit::FoldWith};
 use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
 
@@ -79,6 +79,8 @@ impl VisitMut for Transform {
     fn visit_mut_expr(&mut self, expr: &mut Expr) {
         if let Some(e) = self.apply_classmap(&Box::new(expr.clone())) {
             *expr = *e
+        } else {
+            expr.visit_mut_children_with(self)
         }
     }
 }
