@@ -16,7 +16,7 @@ export class Transpiler {
         const dest = file.replace(/\.[^\.]+$/, ".js");
         const buffer = await fs.readFile(file, "utf-8");
         const { code } = await swc.transform(buffer, {
-            filename: path.basename(file),
+            filename: file,
             isModule: true,
             jsc: {
                 baseUrl: ".",
@@ -41,6 +41,7 @@ export class Transpiler {
                 },
                 loose: false,
             },
+            outputPath: dest,
             sourceMaps: false,
         });
         await fs.writeFile(dest, code);
