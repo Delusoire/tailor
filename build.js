@@ -8,7 +8,7 @@ export class Builder {
     metadata;
     transpiler;
     cssEntry;
-    static jsGlob = "./**/*.{ts,tsx}";
+    static jsGlob = "./**/*.ts{,x}";
     constructor(metadata, transpiler) {
         this.metadata = metadata;
         this.transpiler = transpiler;
@@ -17,7 +17,7 @@ export class Builder {
     async js(files) {
         if (!files) {
             files = await Array.fromAsync(fs.glob(Builder.jsGlob));
-            files = files.filter(f => !f.includes("node_modules"));
+            files = files.filter(f => !f.includes("node_modules") && !f.endsWith(".d.ts"));
         }
         return Promise.all(files.map(file => this.transpiler.js(file)));
     }
@@ -34,15 +34,19 @@ export class Watcher {
         this.builder = builder;
     }
     async onFsFileChange(event) {
-        switch (path.extname(event.filename)) {
+        const file = event.filename;
+        switch (path.extname(file)) {
             case ".scss": {
                 await this.builder.css();
                 reloadSpotifyDocument();
                 break;
             }
             case ".ts":
+                if (file.endsWith(".d.ts")) {
+                    break;
+                }
             case ".tsx": {
-                await this.builder.js([event.filename]);
+                await this.builder.js([file]);
                 reloadSpotifyDocument();
                 break;
             }

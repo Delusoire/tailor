@@ -14,19 +14,19 @@ import postcssRemapper from "./postcss-remapper/index.js";
 export type ClassMap = Record<string, string | ClassMap>;
 
 export class Transpiler {
-   public constructor(private classmap: ClassMap) {}
+   public constructor( private classmap: ClassMap ) { }
 
-   public async js(file: string) {
-      const dest = file.replace(/\.[^\.]+$/, ".js");
-      const buffer = await fs.readFile(file, "utf-8");
-      const { code } = await swc.transform(buffer, {
+   public async js( file: string ) {
+      const dest = file.replace( /\.[^\.]+$/, ".js" );
+      const buffer = await fs.readFile( file, "utf-8" );
+      const { code } = await swc.transform( buffer, {
          filename: file,
          isModule: true,
          jsc: {
             baseUrl: ".",
             experimental: {
                plugins: [
-                  [import.meta.resolve("swc-remapper").slice(8), { classmap: { CLASSMAP: this.classmap } }],
+                  [ import.meta.resolve( "swc-remapper" ).slice( 8 ), { classmap: { CLASSMAP: this.classmap } } ],
                ],
             },
             parser: {
@@ -47,28 +47,28 @@ export class Transpiler {
          },
          outputPath: dest,
          sourceMaps: false,
-      });
-      await fs.writeFile(dest, code);
+      } );
+      await fs.writeFile( dest, code );
    }
 
-   public async css(file: string, moduleFiles: string[]) {
-      const dest = file.replace(/\.[^\.]+$/, ".css");
-      const buffer = await fs.readFile(file, "utf-8");
-      const PostCSSProcessor = await postcss.default([
+   public async css( file: string, moduleFiles: string[] ) {
+      const dest = file.replace( /\.[^\.]+$/, ".css" );
+      const buffer = await fs.readFile( file, "utf-8" );
+      const PostCSSProcessor = await postcss.default( [
          atImport(),
          tailwindcssNesting(),
-         tailwindcss({
+         tailwindcss( {
             config: {
                content: {
                   relative: true,
                   files: moduleFiles,
                },
             },
-         }),
-         autoprefixer({}),
-         postcssRemapper({ classmap: this.classmap }),
-      ]);
-      const p = await PostCSSProcessor.process(buffer, { from: file });
-      await fs.writeFile(dest, p.css);
+         } ),
+         autoprefixer( {} ),
+         postcssRemapper( { classmap: this.classmap } ),
+      ] );
+      const p = await PostCSSProcessor.process( buffer, { from: file } );
+      await fs.writeFile( dest, p.css );
    }
 }
