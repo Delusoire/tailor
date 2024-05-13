@@ -15,14 +15,17 @@ export class Builder {
 
    private static jsGlob = "./**/*.ts{,x}";
 
-   public constructor( private metadata: Metadata, private transpiler: Transpiler ) {
+   public constructor( metadata: Metadata, private transpiler: Transpiler ) {
       this.cssEntry = metadata.entries.css?.replace( /\.css$/, ".scss" );
    }
 
    public async js( files?: string[] ) {
       if ( !files ) {
-         files = await Array.fromAsync( fs.glob( Builder.jsGlob ) );
-         files = files.filter( f => !f.includes( "node_modules" ) && !f.endsWith( ".d.ts" ) );
+         // @ts-ignore
+         const glob = fs.glob( Builder.jsGlob );
+         // @ts-ignore
+         files = await Array.fromAsync( glob );
+         files = files!.filter( f => !f.includes( "node_modules" ) && !f.endsWith( ".d.ts" ) );
       }
 
       return Promise.all( files.map( file => this.transpiler.js( file ) ) );

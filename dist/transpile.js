@@ -1,4 +1,3 @@
-import path from "node:path";
 import fs from "node:fs/promises";
 import swc from "@swc/core";
 import postcss from "postcss";

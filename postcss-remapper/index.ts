@@ -38,7 +38,7 @@ export default function ( { classmap }: plugin.Options ) {
          } );
 
          return {
-            Rule( ruleNode ) {
+            Rule( ruleNode: any ) {
                if ( ruleNode.parent.type !== "atrule" || !ruleNode.parent.name.endsWith( "keyframes" ) ) {
                   selectorProcessor.process( ruleNode );
                }

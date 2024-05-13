@@ -2,21 +2,21 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import open from "open";
 import debounce from "lodash/debounce.js";
-import { Transpiler } from "./transpile.js";
 const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
 export class Builder {
-    metadata;
     transpiler;
     cssEntry;
     static jsGlob = "./**/*.ts{,x}";
     constructor(metadata, transpiler) {
-        this.metadata = metadata;
         this.transpiler = transpiler;
         this.cssEntry = metadata.entries.css?.replace(/\.css$/, ".scss");
     }
     async js(files) {
         if (!files) {
-            files = await Array.fromAsync(fs.glob(Builder.jsGlob));
+            // @ts-ignore
+            const glob = fs.glob(Builder.jsGlob);
+            // @ts-ignore
+            files = await Array.fromAsync(glob);
             files = files.filter(f => !f.includes("node_modules") && !f.endsWith(".d.ts"));
         }
         return Promise.all(files.map(file => this.transpiler.js(file)));
