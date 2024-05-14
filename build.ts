@@ -13,7 +13,7 @@ export type Metadata = any;
 export class Builder {
    cssEntry: string;
 
-   private static jsGlob = "./**/*.ts{,x}";
+   private static jsGlob = "./**/*.{ts,jsx,tsx}";
 
    public constructor( metadata: Metadata, private transpiler: Transpiler ) {
       this.cssEntry = metadata.entries.css?.replace( /\.css$/, ".scss" );
@@ -55,6 +55,7 @@ export class Watcher {
             if ( file.endsWith( ".d.ts" ) ) {
                break;
             }
+         case ".jsx":
          case ".tsx": {
             await this.builder.js( [ file ] );
             reloadSpotifyDocument();

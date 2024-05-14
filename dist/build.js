@@ -6,7 +6,7 @@ const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 300
 export class Builder {
     transpiler;
     cssEntry;
-    static jsGlob = "./**/*.ts{,x}";
+    static jsGlob = "./**/*.{ts,jsx,tsx}";
     constructor(metadata, transpiler) {
         this.transpiler = transpiler;
         this.cssEntry = metadata.entries.css?.replace(/\.css$/, ".scss");
@@ -45,6 +45,7 @@ export class Watcher {
                 if (file.endsWith(".d.ts")) {
                     break;
                 }
+            case ".jsx":
             case ".tsx": {
                 await this.builder.js([file]);
                 reloadSpotifyDocument();
