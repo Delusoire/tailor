@@ -3,63 +3,72 @@ import fs from "node:fs/promises";
 import open from "open";
 import debounce from "lodash/debounce.js";
 const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
-export class Builder {
-    transpiler;
-    cssEntry;
-    static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
-    constructor(metadata, transpiler) {
-        this.transpiler = transpiler;
-        this.cssEntry = metadata.entries.css?.replace(/\.css$/, ".scss");
-    }
-    async js(files) {
-        if (!files) {
-            // @ts-ignore
-            const glob = fs.glob(Builder.jsGlob);
-            // @ts-ignore
-            files = await Array.fromAsync(glob);
-            files = files.filter(f => !f.includes("node_modules") && !f.endsWith(".d.ts"));
-        }
-        return Promise.all(files.map(file => this.transpiler.js(file)));
-    }
-    async css() {
-        if (!this.cssEntry) {
-            return;
-        }
-        return this.transpiler.css(this.cssEntry, [Builder.jsGlob]);
+async function* fs_walk(dir) {
+    for await (const d of await fs.opendir(dir, {})) {
+        const entry = path.join(dir, d.name);
+        if (d.isDirectory())
+            yield* fs_walk(entry);
+        else if (d.isFile())
+            yield entry;
     }
 }
-export class Watcher {
-    builder;
-    constructor(builder) {
-        this.builder = builder;
+export class Builder {
+    transpiler;
+    outDir;
+    cssEntry;
+    static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
+    constructor(transpiler, metadata, outDir = ".") {
+        this.transpiler = transpiler;
+        this.outDir = outDir;
+        this.cssEntry = metadata.entries.css?.replace(/\.css$/, ".scss");
     }
-    async onFsFileChange(event) {
-        const file = event.filename;
+    async build(input) {
+        const ps = [];
+        for await (const file of fs_walk(input)) {
+            ps.push(this.buildFile(file));
+        }
+        return Promise.all(ps);
+    }
+    getRelPath(p) {
+        return path.join(this.outDir, p);
+    }
+    js(input) {
+        const output = this.getRelPath(input.replace(/\.[^\.]+$/, ".js"));
+        return this.transpiler.js(input, output);
+    }
+    css() {
+        const input = this.cssEntry;
+        const output = this.getRelPath(input.replace(/\.[^\.]+$/, ".css"));
+        return this.transpiler.css(input, output, [Builder.jsGlob]);
+    }
+    copyFile(input) {
+        const output = this.getRelPath(input);
+        return fs.copyFile(input, output);
+    }
+    async buildFile(file, reload = false) {
         switch (path.extname(file)) {
             case ".scss": {
-                await this.builder.css();
-                reloadSpotifyDocument();
+                if (reload || file.endsWith(this.cssEntry)) {
+                    await this.css();
+                    reload && reloadSpotifyDocument();
+                }
                 break;
             }
             case ".ts":
                 if (file.endsWith(".d.ts")) {
                     break;
                 }
-            case ".mjsx":
+            case ".mjs":
             case ".jsx":
             case ".tsx": {
-                await this.builder.js([file]);
-                reloadSpotifyDocument();
+                await this.js(file);
+                reload && reloadSpotifyDocument();
                 break;
             }
-        }
-    }
-    async watch() {
-        console.log("Watching for changes...");
-        const watcher = fs.watch(".", { recursive: true });
-        for await (const event of watcher) {
-            console.log(`${event.filename} was ${event.eventType}d`);
-            await this.onFsFileChange(event);
+            default: {
+                await this.copyFile(file);
+                break;
+            }
         }
     }
 }

@@ -2,7 +2,7 @@
 
 import fs from "node:fs/promises";
 
-import { type Metadata, Builder, Watcher } from "./build.js";
+import { type Metadata, Builder } from "./build.js";
 import { type ClassMap, Transpiler } from "./transpile.js";
 
 async function readJSON<T>( path: string ): Promise<T> {
@@ -44,17 +44,20 @@ interface BuildOpts {
 
 async function buildAndWatch( { classmap, metadata }: BuildOpts ) {
    const transpiler = new Transpiler( classmap );
-   const builder = new Builder( metadata, transpiler );
-   const watcher = new Watcher( builder );
+   const builder = new Builder( transpiler, metadata, "dist" );
 
    const timeStart = Date.now();
 
-   await builder.js();
-   await builder.css();
+   await builder.build( "." );
 
    console.log( `Build finished in ${ ( Date.now() - timeStart ) / 1000 }s!` );
+   console.log( "Watching for changes..." );
 
-   await watcher.watch();
+   const watcher = fs.watch( ".", { recursive: true } );
+   for await ( const event of watcher ) {
+      console.log( `${ event.filename } was ${ event.eventType }d` );
+      await builder.buildFile( event.filename!, true );
+   }
 }
 
 // TODO: add cli options for these

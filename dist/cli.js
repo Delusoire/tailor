@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
-import { Builder, Watcher } from "./build.js";
+import { Builder } from "./build.js";
 import { Transpiler } from "./transpile.js";
 async function readJSON(path) {
     const file = await fs.readFile(path, "utf-8");
@@ -32,13 +32,16 @@ declare const CLASSMAP = ${genType(classmap)} as const;
 }
 async function buildAndWatch({ classmap, metadata }) {
     const transpiler = new Transpiler(classmap);
-    const builder = new Builder(metadata, transpiler);
-    const watcher = new Watcher(builder);
+    const builder = new Builder(transpiler, metadata, "dist");
     const timeStart = Date.now();
-    await builder.js();
-    await builder.css();
+    await builder.build(".");
     console.log(`Build finished in ${(Date.now() - timeStart) / 1000}s!`);
-    await watcher.watch();
+    console.log("Watching for changes...");
+    const watcher = fs.watch(".", { recursive: true });
+    for await (const event of watcher) {
+        console.log(`${event.filename} was ${event.eventType}d`);
+        await builder.buildFile(event.filename, true);
+    }
 }
 // TODO: add cli options for these
 const classmap = await readJSON("./classmap.json");

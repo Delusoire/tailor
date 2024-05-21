@@ -15,11 +15,10 @@ export type ClassMap = Record<string, string | ClassMap>;
 export class Transpiler {
    public constructor( private classmap: ClassMap ) { }
 
-   public async js( file: string ) {
-      const dest = file.replace( /\.[^\.]+$/, ".js" );
-      const buffer = await fs.readFile( file, "utf-8" );
+   public async js( input: string, output: string ) {
+      const buffer = await fs.readFile( input, "utf-8" );
       const { code } = await swc.transform( buffer, {
-         filename: file,
+         filename: input,
          isModule: true,
          jsc: {
             baseUrl: ".",
@@ -44,15 +43,14 @@ export class Transpiler {
             },
             loose: false,
          },
-         outputPath: dest,
+         outputPath: output,
          sourceMaps: false,
       } );
-      await fs.writeFile( dest, code );
+      await fs.writeFile( output, code );
    }
 
-   public async css( file: string, moduleFiles: string[] ) {
-      const dest = file.replace( /\.[^\.]+$/, ".css" );
-      const buffer = await fs.readFile( file, "utf-8" );
+   public async css( input: string, output: string, files: string[] ) {
+      const buffer = await fs.readFile( input, "utf-8" );
       const PostCSSProcessor = await postcss.default( [
          atImport(),
          tailwindcssNesting(),
@@ -60,14 +58,14 @@ export class Transpiler {
             config: {
                content: {
                   relative: true,
-                  files: moduleFiles,
+                  files,
                },
             },
          } ),
          autoprefixer( {} ),
          postcssRemapper( { classmap: this.classmap } ),
       ] );
-      const p = await PostCSSProcessor.process( buffer, { from: file } );
-      await fs.writeFile( dest, p.css );
+      const p = await PostCSSProcessor.process( buffer, { from: input } );
+      await fs.writeFile( output, p.css );
    }
 }
