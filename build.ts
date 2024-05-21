@@ -18,13 +18,24 @@ async function* fs_walk( dir: string ): AsyncGenerator<string> {
    }
 }
 
+
+interface BuilderOpts {
+   metadata: Metadata;
+   outDir: string;
+   copyUnknown: boolean;
+}
+
 export class Builder {
    cssEntry: string;
+   outDir: string;
+   copyUnknown: boolean;
 
    private static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
 
-   public constructor( private transpiler: Transpiler, metadata: Metadata, private outDir = ".", ) {
-      this.cssEntry = metadata.entries.css?.replace( /\.css$/, ".scss" );
+   public constructor( private transpiler: Transpiler, opts: BuilderOpts ) {
+      this.cssEntry = opts.metadata.entries.css?.replace( /\.css$/, ".scss" );
+      this.outDir = opts.outDir;
+      this.copyUnknown = opts.copyUnknown;
    }
 
    public async build( input: string ) {
@@ -76,7 +87,7 @@ export class Builder {
             break;
          }
          default: {
-            await this.copyFile( file );
+            this.copyUnknown && await this.copyFile( file );
             break;
          }
       }

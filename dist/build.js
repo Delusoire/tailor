@@ -14,13 +14,15 @@ async function* fs_walk(dir) {
 }
 export class Builder {
     transpiler;
-    outDir;
     cssEntry;
+    outDir;
+    copyUnknown;
     static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
-    constructor(transpiler, metadata, outDir = ".") {
+    constructor(transpiler, opts) {
         this.transpiler = transpiler;
-        this.outDir = outDir;
-        this.cssEntry = metadata.entries.css?.replace(/\.css$/, ".scss");
+        this.cssEntry = opts.metadata.entries.css?.replace(/\.css$/, ".scss");
+        this.outDir = opts.outDir;
+        this.copyUnknown = opts.copyUnknown;
     }
     async build(input) {
         const ps = [];
@@ -66,7 +68,7 @@ export class Builder {
                 break;
             }
             default: {
-                await this.copyFile(file);
+                this.copyUnknown && await this.copyFile(file);
                 break;
             }
         }

@@ -37,20 +37,65 @@ declare const CLASSMAP = ${ genType( classmap ) } as const;
    return fs.writeFile( "./classmap.d.ts", dts );
 }
 
-interface BuildOpts {
-   classmap: ClassMap;
-   metadata: Metadata;
-}
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import path from "node:path";
 
-async function buildAndWatch( { classmap, metadata }: BuildOpts ) {
-   const transpiler = new Transpiler( classmap );
-   const builder = new Builder( transpiler, metadata, "dist" );
+const argv = await yargs( hideBin( process.argv ) )
+   .version()
+   .usage( "tailor is to bespoke as chef is to gourmet" )
+   .option( "c", {
+      alias: "classmap",
+      type: "string",
+      default: "classmap.json",
+      desc: "path to classmap"
+   } )
+   .option( "i", {
+      alias: "input",
+      type: "string",
+      default: ".",
+      desc: "input folder"
+   } )
+   .option( "o", {
+      alias: "output",
+      type: "string",
+      default: ".",
+      desc: "output folder"
+   } )
+   .option( "copy", {
+      type: "boolean",
+      default: false,
+      desc: "copy unsupported files"
+   } )
+   .option( "w", {
+      alias: "watch",
+      type: "boolean",
+      default: false,
+      desc: "watch for file changes"
+   } )
+   .parse();
 
+const classmap = await readJSON<ClassMap>( argv.c );
+const metadata = await readJSON<Metadata>( path.join( argv.i, "metadata.json" ) );
+
+await writeClassMapDts( classmap );
+
+const transpiler = new Transpiler( classmap );
+const builder = new Builder( transpiler, {
+   metadata,
+   outDir: argv.o,
+   copyUnknown: argv.copy
+} );
+
+async function build() {
    const timeStart = Date.now();
 
-   await builder.build( "." );
+   await builder.build( argv.i );
 
    console.log( `Build finished in ${ ( Date.now() - timeStart ) / 1000 }s!` );
+}
+
+async function watch() {
    console.log( "Watching for changes..." );
 
    const watcher = fs.watch( ".", { recursive: true } );
@@ -60,10 +105,7 @@ async function buildAndWatch( { classmap, metadata }: BuildOpts ) {
    }
 }
 
-// TODO: add cli options for these
-const classmap = await readJSON<ClassMap>( "./classmap.json" );
-const metadata = await readJSON<Metadata>( "./metadata.json" );
-
-await writeClassMapDts( classmap );
-
-await buildAndWatch( { classmap, metadata } );
+await build();
+if ( argv.w ) {
+   await watch();
+}
