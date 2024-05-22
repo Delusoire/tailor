@@ -1,0 +1,6 @@
+{
+   "scripts": {
+      "prepublishOnly": "cargo build-wasi --release"
+   },
+   "preferUnplugged": true
+}

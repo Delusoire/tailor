@@ -13,8 +13,11 @@
  * limitations under the License.
  */
 
+import type postcss from "postcss";
 import selectorParser from "postcss-selector-parser";
-import type { ClassMap } from "../transpile.js";
+
+// @ts-ignore
+export type ClassMap = Record<string, string | ClassMap>;
 
 namespace plugin {
    export interface Options {
@@ -22,7 +25,7 @@ namespace plugin {
    }
 }
 
-export default function ( { classmap }: plugin.Options ) {
+export default function ( { classmap }: plugin.Options ): postcss.AcceptedPlugin {
    return {
       postcssPlugin: "postcss-remapper",
       prepare() {

@@ -1,9 +1,0 @@
-{
-    "name": "postcss-remapper",
-    "version": "0.1.0",
-    "type": "module",
-    "author": "Delusoire",
-    "keywords": [
-        "postcss-plugin"
-    ]
-}

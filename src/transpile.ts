@@ -7,10 +7,8 @@ import atImport from "postcss-import";
 import tailwindcssNesting from "tailwindcss/nesting/index.js";
 import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
-import postcssRemapper from "./postcss-remapper/index.js";
-
-// @ts-ignore
-export type ClassMap = Record<string, string | ClassMap>;
+import postcssRemapper, { type ClassMap } from "@delu/postcss-remapper";
+import swcRemapper from "@delu/swc-remapper";
 
 export class Transpiler {
    public constructor( private classmap: ClassMap ) { }
@@ -24,7 +22,7 @@ export class Transpiler {
             baseUrl: ".",
             experimental: {
                plugins: [
-                  [ import.meta.resolve( "swc-remapper" ).slice( 8 ), { classmap: { CLASSMAP: this.classmap } } ],
+                  [ swcRemapper(), { classmap: { CLASSMAP: this.classmap } } ],
                ],
             },
             parser: {

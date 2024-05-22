@@ -1,0 +1,5 @@
+{
+   "name": "@delu/swc-remapper",
+   "version": "0.1.3",
+   "exports": "./index.ts"
+}

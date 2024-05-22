@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises";
+import path from "node:path";
 
 import { type Metadata, Builder } from "./build.js";
-import { type ClassMap, Transpiler } from "./transpile.js";
+import { Transpiler } from "./transpile.js";
+import type { ClassMap } from "@delu/postcss-remapper";
 
 async function readJSON<T>( path: string ): Promise<T> {
    const file = await fs.readFile( path, "utf-8" );
@@ -39,7 +41,6 @@ declare const CLASSMAP = ${ genType( classmap ) } as const;
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import path from "node:path";
 
 const argv = await yargs( hideBin( process.argv ) )
    .version()

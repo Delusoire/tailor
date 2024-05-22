@@ -1,0 +1,8 @@
+{
+   "dependencies": {
+      "postcss-selector-parser": "^6.0.16"
+   },
+   "devDependencies": {
+      "postcss": "^8.4.38"
+   }
+}

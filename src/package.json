@@ -1,14 +1,7 @@
 {
-  "name": "tailor",
-  "version": "0.1.0",
-  "type": "module",
-  "bin": {
-    "tailor": "./dist/cli.js"
-  },
-  "scripts": {
-    "build": "esbuild"
-  },
   "dependencies": {
+    "@delu/postcss-remapper": "npm:@jsr/delu__postcss-remapper@^0.1.0",
+    "@delu/swc-remapper": "npm:@jsr/delu__swc-remapper@^0.1.3",
     "@swc/core": "^1.5.5",
     "@swc/wasm": "^1.5.5",
     "autoprefixer": "^10.4.18",
@@ -16,17 +9,14 @@
     "open": "^10.1.0",
     "postcss": "^8.4.35",
     "postcss-import": "^16.0.1",
-    "postcss-remapper": "file:postcss-remapper",
     "postcss-scss": "^4.0.9",
-    "swc-remapper": "file:swc-remapper",
     "tailwindcss": "^3.4.1",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.202",
-    "@types/node": "^20.12.11",
+    "@types/node": "^20.12.12",
     "@types/postcss-import": "^14.0.3",
-    "@types/yargs": "^17.0.32",
-    "esbuild": "^0.21.1"
+    "@types/yargs": "^17.0.32"
   }
 }
