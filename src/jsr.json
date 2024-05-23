@@ -1,8 +1,8 @@
 {
    "name": "@delu/tailor",
-   "version": "0.1.6",
-   "exports": "./lib.ts",
-   "include": [
-      "./cli.ts"
-   ]
+   "version": "0.1.8",
+   "exports": {
+      ".": "./lib.ts",
+      "./cli": "./cli.ts"
+   }
 }
