@@ -10,6 +10,8 @@ import autoprefixer from "autoprefixer";
 import postcssRemapper, { type ClassMap } from "@delu/postcss-remapper";
 import swcRemapper from "@delu/swc-remapper";
 
+export type { ClassMap };
+
 export class Transpiler {
    public constructor( private classmap: ClassMap ) { }
 

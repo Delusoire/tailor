@@ -1,46 +1,13 @@
 #!/usr/bin/env node
 
-import fs from "node:fs/promises";
 import path from "node:path";
 
-import { type Metadata, Builder } from "./build.js";
-import { Transpiler } from "./transpile.js";
-import type { ClassMap } from "@delu/postcss-remapper";
-
-async function readJSON<T>( path: string ): Promise<T> {
-   const file = await fs.readFile( path, "utf-8" );
-   return JSON.parse( file ) as T;
-}
-
-function writeClassMapDts( classmap: ClassMap ) {
-   function genType( obj: any ) {
-      let s = "";
-
-      for ( const [ k, v ] of Object.entries( obj ) ) {
-         s += `"${ k }":`;
-         if ( typeof v === "string" ) {
-            s += `"${ v }"`;
-         } else if ( Object.getPrototypeOf( v ) === Object.prototype ) {
-            s += genType( v );
-         } else {
-            s += "unknown";
-         }
-         s += ",";
-      }
-
-      return `{${ s }}`;
-   }
-
-   const dts = `/* Bespoke Tailored Classmap (BTC) */
-
-declare const CLASSMAP = ${ genType( classmap ) } as const;
-`;
-
-   return fs.writeFile( "./classmap.d.ts", dts );
-}
+import { type Metadata, Builder } from "./build";
+import { Transpiler, type ClassMap } from "./transpile";
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { build, readJSON, watch, writeClassMapDts } from "./util.js";
 
 const argv = await yargs( hideBin( process.argv ) )
    .version()
@@ -68,6 +35,18 @@ const argv = await yargs( hideBin( process.argv ) )
       default: false,
       desc: "copy unsupported files"
    } )
+   .option( "d", {
+      alias: "declaration",
+      type: "boolean",
+      default: false,
+      desc: "emit declaration"
+   } )
+   .option( "b", {
+      alias: "build",
+      type: "boolean",
+      default: false,
+      desc: "build and apply classmap"
+   } )
    .option( "w", {
       alias: "watch",
       type: "boolean",
@@ -79,7 +58,9 @@ const argv = await yargs( hideBin( process.argv ) )
 const classmap = await readJSON<ClassMap>( argv.c );
 const metadata = await readJSON<Metadata>( path.join( argv.i, "metadata.json" ) );
 
-await writeClassMapDts( classmap );
+if ( argv.d ) {
+   await writeClassMapDts( classmap );
+}
 
 const transpiler = new Transpiler( classmap );
 const builder = new Builder( transpiler, {
@@ -88,25 +69,10 @@ const builder = new Builder( transpiler, {
    copyUnknown: argv.copy
 } );
 
-async function build() {
-   const timeStart = Date.now();
 
-   await builder.build( argv.i );
-
-   console.log( `Build finished in ${ ( Date.now() - timeStart ) / 1000 }s!` );
+if ( argv.b ) {
+   await build( builder, argv.i );
 }
-
-async function watch() {
-   console.log( "Watching for changes..." );
-
-   const watcher = fs.watch( ".", { recursive: true } );
-   for await ( const event of watcher ) {
-      console.log( `${ event.filename } was ${ event.eventType }d` );
-      await builder.buildFile( event.filename!, true );
-   }
-}
-
-await build();
 if ( argv.w ) {
-   await watch();
+   await watch( builder );
 }

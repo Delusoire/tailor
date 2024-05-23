@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import open from "open";
 
 import debounce from "lodash/debounce.js";
-import { Transpiler } from "./transpile.js";
+import { Transpiler } from "./transpile";
 
 const reloadSpotifyDocument = debounce( () => open( "spotify:app:rpc:reload" ), 3000 );
 
@@ -19,7 +19,7 @@ async function* fs_walk( dir: string ): AsyncGenerator<string> {
 }
 
 
-interface BuilderOpts {
+export interface BuilderOpts {
    metadata: Metadata;
    outDir: string;
    copyUnknown: boolean;
@@ -38,7 +38,7 @@ export class Builder {
       this.copyUnknown = opts.copyUnknown;
    }
 
-   public async build( input: string ) {
+   public async build( input: string ): Promise<void[]> {
       const ps = [];
       for await ( const file of fs_walk( input ) ) {
          ps.push( this.buildFile( file ) );
@@ -50,18 +50,18 @@ export class Builder {
       return path.join( this.outDir, p );
    }
 
-   public js( input: string ) {
+   public js( input: string ): Promise<void> {
       const output = this.getRelPath( input.replace( /\.[^\.]+$/, ".js" ) );
       return this.transpiler.js( input, output );
    }
 
-   public css() {
+   public css(): Promise<void> {
       const input = this.cssEntry;
       const output = this.getRelPath( input.replace( /\.[^\.]+$/, ".css" ) );
       return this.transpiler.css( input, output, [ Builder.jsGlob ] );
    }
 
-   public copyFile( input: string ) {
+   public copyFile( input: string ): Promise<void> {
       const output = this.getRelPath( input );
       return fs.copyFile( input, output );
    }
