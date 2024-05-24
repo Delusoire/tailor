@@ -33,7 +33,7 @@ export class Builder {
    private static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
 
    public constructor( private transpiler: Transpiler, opts: BuilderOpts ) {
-      this.cssEntry = opts.metadata.entries.css?.replace( /\.css$/, ".scss" );
+      this.cssEntry = path.normalize( opts.metadata.entries.css?.replace( /\.css$/, ".scss" ) );
       this.outDir = opts.outDir;
       this.copyUnknown = opts.copyUnknown;
    }
@@ -69,7 +69,7 @@ export class Builder {
    public async buildFile( file: string, reload = false ) {
       switch ( path.extname( file ) ) {
          case ".scss": {
-            if ( reload || file.endsWith( this.cssEntry ) ) {
+            if ( reload || file === this.cssEntry ) {
                await this.css();
                reload && reloadSpotifyDocument();
             }
