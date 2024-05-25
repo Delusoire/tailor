@@ -67,6 +67,9 @@ export class Builder {
    }
 
    public async buildFile( file: string, reload = false ) {
+      if ( file.includes( "node_modules" ) ) {
+         return;
+      }
       switch ( path.extname( file ) ) {
          case ".scss": {
             if ( reload || file === this.cssEntry ) {
