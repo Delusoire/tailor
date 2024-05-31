@@ -7,24 +7,24 @@ import atImport from "postcss-import";
 import tailwindcssNesting from "tailwindcss/nesting/index.js";
 import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
-import postcssRemapper, { type ClassMap } from "@delu/postcss-remapper";
-import swcRemapper from "@delu/swc-remapper";
+import postcssRemapper, { type ClassMap } from "jsr:@delu/postcss-remapper";
+import swcRemapper from "jsr:@delu/swc-remapper";
 
 export type { ClassMap };
 
 export class Transpiler {
-   public constructor( private classmap: ClassMap ) { }
+   public constructor(private classmap: ClassMap) { }
 
-   public async js( input: string, output: string ) {
-      const buffer = await fs.readFile( input, "utf-8" );
-      const { code } = await swc.transform( buffer, {
+   public async js(input: string, output: string) {
+      const buffer = await fs.readFile(input, "utf-8");
+      const { code } = await swc.transform(buffer, {
          filename: input,
          isModule: true,
          jsc: {
             baseUrl: ".",
             experimental: {
                plugins: [
-                  [ swcRemapper(), { classmap: { CLASSMAP: this.classmap } } ],
+                  [swcRemapper(), { classmap: { CLASSMAP: this.classmap } }],
                ],
             },
             parser: {
@@ -45,27 +45,27 @@ export class Transpiler {
          },
          outputPath: output,
          sourceMaps: false,
-      } );
-      await fs.writeFile( output, code );
+      });
+      await fs.writeFile(output, code);
    }
 
-   public async css( input: string, output: string, files: string[] ) {
-      const buffer = await fs.readFile( input, "utf-8" );
-      const PostCSSProcessor = await postcss.default( [
+   public async css(input: string, output: string, files: string[]) {
+      const buffer = await fs.readFile(input, "utf-8");
+      const PostCSSProcessor = await postcss.default([
          atImport(),
          tailwindcssNesting(),
-         tailwindcss( {
+         tailwindcss({
             config: {
                content: {
                   relative: true,
                   files,
                },
             },
-         } ),
-         autoprefixer( {} ),
-         postcssRemapper( { classmap: this.classmap } ),
-      ] );
-      const p = await PostCSSProcessor.process( buffer, { from: input } );
-      await fs.writeFile( output, p.css );
+         }),
+         autoprefixer({}),
+         postcssRemapper({ classmap: this.classmap }),
+      ]);
+      const p = await PostCSSProcessor.process(buffer, { from: input });
+      await fs.writeFile(output, p.css);
    }
 }
