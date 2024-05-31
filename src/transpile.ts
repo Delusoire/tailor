@@ -1,14 +1,14 @@
 import fs from "node:fs/promises";
 
-import swc from "@swc/core";
-import postcss from "postcss";
+import swc from "npm:@swc/core@1.5.24";
+import postcss from "npm:postcss@8.4.38";
 
-import atImport from "postcss-import";
-import tailwindcssNesting from "tailwindcss/nesting/index.js";
-import tailwindcss from "tailwindcss";
-import autoprefixer from "autoprefixer";
-import postcssRemapper, { type ClassMap } from "jsr:@delu/postcss-remapper";
-import swcRemapper from "jsr:@delu/swc-remapper";
+import atImport from "npm:postcss-import@16.1.0";
+import tailwindcssNesting from "npm:tailwindcss@3.4.3/nesting/index.js";
+import tailwindcss from "npm:tailwindcss@3.4.3";
+import autoprefixer from "npm:autoprefixer@10.4.19";
+import postcssRemapper, { type ClassMap } from "jsr:@delu/postcss-remapper@0.1.0";
+import swcRemapper from "jsr:@delu/swc-remapper@0.1.3";
 
 export type { ClassMap };
 

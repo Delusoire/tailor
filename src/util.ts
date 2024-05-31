@@ -1,7 +1,7 @@
 
-import type { ClassMap } from "./transpile";
+import type { ClassMap } from "./transpile.ts";
 import fs from "node:fs/promises";
-import type { Builder } from "./build";
+import type { Builder } from "./build.ts";
 
 
 export async function readJSON<T>(path: string): Promise<T> {

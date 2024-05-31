@@ -2,14 +2,13 @@
 
 import path from "node:path";
 
-import { type Metadata, Builder } from "./build";
-import { Transpiler, type ClassMap } from "./transpile";
+import { type Metadata, Builder } from "./build.ts";
+import { Transpiler, type ClassMap } from "./transpile.ts";
 
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
-import { build, readJSON, watch, writeClassMapDts } from "./util.js";
+import yargs from 'npm:yargs@17.7.2';
+import { build, readJSON, watch, writeClassMapDts } from "./util.ts";
 
-const argv = await yargs(hideBin(process.argv))
+const argv = await yargs(Deno.args)
    .version()
    .usage("tailor is to bespoke as chef is to gourmet")
    .option("c", {
@@ -68,7 +67,6 @@ const builder = new Builder(transpiler, {
    outDir: argv.o,
    copyUnknown: argv.copy
 });
-
 
 if (argv.b) {
    await build(builder, argv.i);

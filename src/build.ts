@@ -1,10 +1,10 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 
-import open from "open";
+import open from "npm:open@10.1.0";
 
-import debounce from "lodash/debounce.js";
-import { Transpiler } from "./transpile";
+import debounce from "npm:lodash@4.17.21/debounce.js";
+import type { Transpiler } from "./transpile.ts";
 
 const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
 
@@ -78,6 +78,7 @@ export class Builder {
             }
             break;
          }
+         // deno-lint-ignore no-fallthrough
          case ".ts":
             if (file.endsWith(".d.ts")) {
                break;

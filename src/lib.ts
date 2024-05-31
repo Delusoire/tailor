@@ -1,3 +1,3 @@
-export { Transpiler, ClassMap } from "./transpile";
-export { Builder, BuilderOpts, Metadata } from "./build";
-export { readJSON, writeClassMapDts, build, watch } from "./util";
+export { Transpiler, type ClassMap } from "./transpile.ts";
+export { Builder, type BuilderOpts, type Metadata } from "./build.ts";
+export { readJSON, writeClassMapDts, build, watch } from "./util.ts";
