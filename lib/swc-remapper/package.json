@@ -1,6 +1,13 @@
 {
+   "name": "swc-remapper",
+   "version": "0.1.10",
+   "exports": "./index.js",
    "scripts": {
       "prepublishOnly": "cargo build-wasi --release"
    },
-   "preferUnplugged": true
+   "devDependencies": {
+      "@types/node": "^20.13.0"
+   },
+   "preferUnplugged": true,
+   "type": "module"
 }

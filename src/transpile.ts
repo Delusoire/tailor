@@ -8,7 +8,7 @@ import tailwindcssNesting from "npm:tailwindcss@3.4.3/nesting/index.js";
 import tailwindcss from "npm:tailwindcss@3.4.3";
 import autoprefixer from "npm:autoprefixer@10.4.19";
 import postcssRemapper, { type ClassMap } from "jsr:@delu/postcss-remapper@0.1.0";
-import swcRemapper from "jsr:@delu/swc-remapper@0.1.3";
+import swcRemapper from "npm:swc-remapper@0.1.10";
 
 export type { ClassMap };
 

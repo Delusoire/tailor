@@ -11,7 +11,7 @@ const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 300
 export type Metadata = any;
 
 async function* fs_walk(dir: string): AsyncGenerator<string> {
-   for await (const d of await fs.opendir(dir, {})) {
+   for await (const d of await fs.opendir(dir, { bufferSize: 32 })) {
       const entry = path.join(dir, d.name);
       if (d.isDirectory()) yield* fs_walk(entry);
       else if (d.isFile()) yield entry;
