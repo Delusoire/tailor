@@ -14,7 +14,7 @@ export function writeClassMapDts(mapping: Mapping): Promise<void> {
       let s = "";
 
       for (const [k, v] of Object.entries(obj)) {
-         s += `"${k}":`;
+         s += `readonly "${k}":`;
          if (typeof v === "string") {
             s += `"${v}"`;
          } else if (Object.getPrototypeOf(v) === Object.prototype) {
@@ -30,7 +30,7 @@ export function writeClassMapDts(mapping: Mapping): Promise<void> {
 
    const dts = `/* Bespoke Tailored Classmap (BTC) */
 
-declare const MAP = ${genType(mapping)} as const;
+declare const MAP = ${genType(mapping)};
 `;
 
    return fs.writeFile("./classmap.d.ts", dts);
