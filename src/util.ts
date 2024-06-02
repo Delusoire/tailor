@@ -33,6 +33,8 @@ export function writeClassMapDts(mapping: Mapping): Promise<void> {
 declare const MAP: ${genType(mapping)};
 `;
 
+   console.log("Writing classmap declaration...");
+
    return fs.writeFile("./classmap.d.ts", dts);
 }
 

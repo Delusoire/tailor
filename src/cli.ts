@@ -14,7 +14,6 @@ const argv = await yargs(Deno.args)
    .option("c", {
       alias: "classmap",
       type: "string",
-      default: "classmap.json",
       desc: "path to classmap"
    })
    .option("i", {
@@ -54,7 +53,11 @@ const argv = await yargs(Deno.args)
    })
    .parse();
 
-const classmap = await readJSON<Mapping>(argv.c);
+let classmap: Mapping = {};
+if (argv.c) {
+   console.log("Loading classmap...");
+   classmap = await readJSON<Mapping>(argv.c);
+}
 const metadata = await readJSON<Metadata>(path.join(argv.i, "metadata.json"));
 
 if (argv.d) {
