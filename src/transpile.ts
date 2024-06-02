@@ -7,13 +7,16 @@ import atImport from "npm:postcss-import@16.1.0";
 import tailwindcssNesting from "npm:tailwindcss@3.4.3/nesting/index.js";
 import tailwindcss from "npm:tailwindcss@3.4.3";
 import autoprefixer from "npm:autoprefixer@10.4.19";
-import postcssRemapper, { type ClassMap } from "jsr:@delu/postcss-remapper@0.1.0";
-import swcRemapper from "npm:swc-remapper@0.1.10";
+import postcssPluginRemapper, {
+   type Mapping,
+} from "jsr:@delu/postcss-plugin-remapper@0.1.1";
+import swcPluginRemapper from "npm:@delusoire/swc-plugin-remapper@0.1.1";
+import swcPluginTransformModuleSpecifiers from "npm:@delusoire/swc-plugin-transform-module-specifiers@0.1.0";
 
-export type { ClassMap };
+export type { Mapping };
 
 export class Transpiler {
-   public constructor(private classmap: ClassMap) { }
+   public constructor(private classmap: Mapping) { }
 
    public async js(input: string, output: string) {
       const buffer = await fs.readFile(input, "utf-8");
@@ -24,7 +27,16 @@ export class Transpiler {
             baseUrl: ".",
             experimental: {
                plugins: [
-                  [swcRemapper(), { classmap: { CLASSMAP: this.classmap } }],
+                  [swcPluginRemapper(), { mapping: { MAP: this.classmap } }],
+                  [swcPluginTransformModuleSpecifiers(), {
+                     extensions: [
+                        [".ts", ".js"],
+                        [".mjs", ".js"],
+                        [".mts", ".js"],
+                        [".jsx", ".js"],
+                        [".tsx", ".js"],
+                     ],
+                  }],
                ],
             },
             parser: {
@@ -50,6 +62,16 @@ export class Transpiler {
    }
 
    public async css(input: string, output: string, files: string[]) {
+      function reformatClassmap(classmap: Mapping) {
+         const reformattedEntries = Object.keys(classmap).map(([k, v]) => {
+            if (typeof v === "object") {
+               v = reformatClassmap(v);
+            }
+            return [k.replaceAll("_", "-"), v];
+         });
+         return Object.fromEntries(reformattedEntries);
+      }
+
       const buffer = await fs.readFile(input, "utf-8");
       const PostCSSProcessor = await postcss.default([
          atImport(),
@@ -63,7 +85,9 @@ export class Transpiler {
             },
          }),
          autoprefixer({}),
-         postcssRemapper({ classmap: this.classmap }),
+         postcssPluginRemapper({
+            mapping: { MAP: reformatClassmap(this.classmap) },
+         }),
       ]);
       const p = await PostCSSProcessor.process(buffer, { from: input });
       await fs.writeFile(output, p.css);

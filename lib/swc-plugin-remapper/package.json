@@ -1,13 +1,18 @@
 {
-   "name": "swc-remapper",
-   "version": "0.1.10",
+   "name": "@delusoire/swc-plugin-remapper",
+   "version": "0.1.1",
    "exports": "./index.js",
    "scripts": {
+      "build": "cargo build-wasi",
       "prepublishOnly": "cargo build-wasi --release"
    },
    "devDependencies": {
       "@types/node": "^20.13.0"
    },
+   "files": [
+      "index.js",
+      "target/wasm32-wasi/release/swc_plugin_remapper.wasm"
+   ],
    "preferUnplugged": true,
    "type": "module"
 }

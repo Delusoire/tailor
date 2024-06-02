@@ -1,5 +1,5 @@
 
-import type { ClassMap } from "./transpile.ts";
+import type { Mapping } from "./transpile.ts";
 import fs from "node:fs/promises";
 import type { Builder } from "./build.ts";
 
@@ -9,7 +9,7 @@ export async function readJSON<T>(path: string): Promise<T> {
    return JSON.parse(file) as T;
 }
 
-export function writeClassMapDts(classmap: ClassMap): Promise<void> {
+export function writeClassMapDts(mapping: Mapping): Promise<void> {
    function genType(obj: any) {
       let s = "";
 
@@ -30,7 +30,7 @@ export function writeClassMapDts(classmap: ClassMap): Promise<void> {
 
    const dts = `/* Bespoke Tailored Classmap (BTC) */
 
-declare const CLASSMAP = ${genType(classmap)} as const;
+declare const MAP = ${genType(mapping)} as const;
 `;
 
    return fs.writeFile("./classmap.d.ts", dts);

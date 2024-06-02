@@ -1,6 +1,5 @@
 [package]
-name = "swc-remapper"
-version = "0.1.0"
+name = "swc-plugin-transform-module-specifiers"
 edition = "2021"
 
 [lib]

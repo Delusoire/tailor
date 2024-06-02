@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import { type Metadata, Builder } from "./build.ts";
-import { Transpiler, type ClassMap } from "./transpile.ts";
+import { Transpiler, type Mapping } from "./transpile.ts";
 
 import yargs from 'npm:yargs@17.7.2';
 import { build, readJSON, watch, writeClassMapDts } from "./util.ts";
@@ -52,7 +52,7 @@ const argv = await yargs(Deno.args)
    })
    .parse();
 
-const classmap = await readJSON<ClassMap>(argv.c);
+const classmap = await readJSON<Mapping>(argv.c);
 const metadata = await readJSON<Metadata>(path.join(argv.i, "metadata.json"));
 
 if (argv.d) {
