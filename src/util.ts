@@ -30,7 +30,7 @@ export function writeClassMapDts(mapping: Mapping): Promise<void> {
 
    const dts = `/* Bespoke Tailored Classmap (BTC) */
 
-declare const MAP = ${genType(mapping)};
+declare const MAP: ${genType(mapping)};
 `;
 
    return fs.writeFile("./classmap.d.ts", dts);
