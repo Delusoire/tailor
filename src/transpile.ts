@@ -11,7 +11,7 @@ import postcssPluginRemapper, {
    type Mapping,
 } from "jsr:@delu/postcss-plugin-remapper@0.1.1";
 import swcPluginRemapper from "npm:@delusoire/swc-plugin-remapper@0.1.1";
-import swcPluginTransformModuleSpecifiers from "npm:@delusoire/swc-plugin-transform-module-specifiers@0.1.0";
+import swcPluginTransformModuleSpecifiers from "npm:@delusoire/swc-plugin-transform-module-specifiers@0.1.2";
 
 export type { Mapping };
 

@@ -1,3 +1,5 @@
+import pkg from "./deno.json" with { type: "json" };
+
 import path from "node:path";
 
 import { type Metadata, Builder } from "./build.ts";
@@ -7,7 +9,7 @@ import yargs from 'npm:yargs@17.7.2';
 import { build, readJSON, watch, writeClassMapDts } from "./util.ts";
 
 const argv = await yargs(Deno.args)
-   .version("0.3.4")
+   .version(pkg.version)
    .usage("tailor is to bespoke as chef is to gourmet")
    .option("c", {
       alias: "classmap",

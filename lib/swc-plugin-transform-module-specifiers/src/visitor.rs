@@ -20,6 +20,10 @@ impl TransformVisitor {
     fn rewrite_import_specifier(&self, specifier: &str) -> Option<String> {
         let source_specifier = specifier;
 
+        if (specifier.starts_with("http://") || specifier.starts_with("https://")) {
+            return None;
+        }
+
         let new_specifier = self.rewrite_extension(specifier)?;
 
         if new_specifier == source_specifier {
