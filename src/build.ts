@@ -26,14 +26,15 @@ export interface BuilderOpts {
 }
 
 export class Builder {
-   cssEntry: string;
+   cssEntry?: string;
    outDir: string;
    copyUnknown: boolean;
 
    private static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
 
    public constructor(private transpiler: Transpiler, opts: BuilderOpts) {
-      this.cssEntry = path.normalize(opts.metadata.entries.css?.replace(/\.css$/, ".scss"));
+      const { css } = opts.metadata.entries;
+      this.cssEntry = css ? path.normalize(css.replace(/\.css$/, ".scss")) : undefined;
       this.outDir = opts.outDir;
       this.copyUnknown = opts.copyUnknown;
    }
@@ -57,6 +58,9 @@ export class Builder {
 
    public css(): Promise<void> {
       const input = this.cssEntry;
+      if (!input) {
+         return Promise.reject("couldn't find an entrypoint for css");
+      }
       const output = this.getRelPath(input.replace(/\.[^\.]+$/, ".css"));
       return this.transpiler.css(input, output, [Builder.jsGlob]);
    }
