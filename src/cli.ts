@@ -2,7 +2,7 @@ import pkg from "./deno.json" with { type: "json" };
 
 import path from "node:path";
 
-import { type Metadata, Builder } from "./build.ts";
+import { Builder, type Metadata } from "./build.ts";
 import { Transpiler, type Mapping } from "./transpile.ts";
 
 import yargs from 'npm:yargs@17.7.2';
@@ -67,12 +67,13 @@ if (argv.d) {
 const transpiler = new Transpiler(classmap);
 const builder = new Builder(transpiler, {
    metadata,
-   outDir: argv.o,
+   inputDir: argv.i,
+   outputDir: argv.o,
    copyUnknown: argv.copy
 });
 
 if (argv.b) {
-   await build(builder, argv.i);
+   await build(builder);
 }
 if (argv.w) {
    await watch(builder);

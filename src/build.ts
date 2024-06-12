@@ -1,9 +1,8 @@
-import path from "node:path";
 import fs from "node:fs/promises";
-
-import open from "npm:open@10.1.0";
+import path from "node:path";
 
 import debounce from "npm:lodash@4.17.21/debounce.js";
+import open from "npm:open@10.1.0";
 import type { Transpiler } from "./transpile.ts";
 
 const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
@@ -21,34 +20,43 @@ async function* fs_walk(dir: string): AsyncGenerator<string> {
 
 export interface BuilderOpts {
    metadata: Metadata;
-   outDir: string;
+   inputDir: string;
+   outputDir: string;
    copyUnknown: boolean;
 }
 
 export class Builder {
    cssEntry?: string;
-   outDir: string;
+   inputDir: string;
+   outputDir: string;
    copyUnknown: boolean;
 
    private static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
 
    public constructor(private transpiler: Transpiler, opts: BuilderOpts) {
-      const { css } = opts.metadata.entries;
-      this.cssEntry = css ? path.normalize(css.replace(/\.css$/, ".scss")) : undefined;
-      this.outDir = opts.outDir;
+      this.inputDir = opts.inputDir;
+      this.outputDir = opts.outputDir;
       this.copyUnknown = opts.copyUnknown;
+
+      const { css } = opts.metadata.entries;
+      const scss = css.replace(/\.css$/, ".scss");
+      if (scss) {
+         this.cssEntry = path.resolve(this.inputDir, scss);
+      }
+
+      transpiler.init(this.inputDir);
    }
 
-   public async build(input: string): Promise<void[]> {
+   public async build(): Promise<void[]> {
       const ps = [];
-      for await (const file of fs_walk(input)) {
+      for await (const file of fs_walk(this.inputDir)) {
          ps.push(this.buildFile(file));
       }
       return Promise.all(ps);
    }
 
    private getRelPath(p: string) {
-      return path.join(this.outDir, p);
+      return path.join(this.outputDir, p);
    }
 
    public js(input: string): Promise<void> {
@@ -71,12 +79,14 @@ export class Builder {
    }
 
    public async buildFile(file: string, reload = false) {
-      if (file.includes("node_modules")) {
+      const absFile = path.resolve(this.inputDir, file);
+      const relFile = path.relative(this.inputDir, file);
+      if (relFile.includes("node_modules")) {
          return;
       }
       switch (path.extname(file)) {
          case ".scss": {
-            if (reload || file === this.cssEntry) {
+            if (reload || absFile === this.cssEntry) {
                await this.css();
                reload && reloadSpotifyDocument();
             }
@@ -90,15 +100,14 @@ export class Builder {
          case ".mjs":
          case ".jsx":
          case ".tsx": {
-            await this.js(file);
+            await this.js(relFile);
             reload && reloadSpotifyDocument();
             break;
          }
          default: {
-            this.copyUnknown && await this.copyFile(file);
+            this.copyUnknown && await this.copyFile(relFile);
             break;
          }
       }
    }
-
 }

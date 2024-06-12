@@ -1,7 +1,7 @@
 
-import type { Mapping } from "./transpile.ts";
 import fs from "node:fs/promises";
 import type { Builder } from "./build.ts";
+import type { Mapping } from "./transpile.ts";
 
 
 export async function readJSON<T>(path: string): Promise<T> {
@@ -38,10 +38,10 @@ declare const MAP: ${genType(mapping)};
    return fs.writeFile("./classmap.d.ts", dts);
 }
 
-export async function build(builder: Builder, input: string) {
+export async function build(builder: Builder) {
    const timeStart = Date.now();
 
-   await builder.build(input);
+   await builder.build();
 
    console.log(`Build finished in ${(Date.now() - timeStart) / 1000}s!`);
 }
@@ -49,7 +49,7 @@ export async function build(builder: Builder, input: string) {
 export async function watch(builder: Builder) {
    console.log("Watching for changes...");
 
-   const watcher = fs.watch(".", { recursive: true });
+   const watcher = fs.watch(builder.inputDir, { recursive: true });
    for await (const event of watcher) {
       console.log(`${event.filename} was ${event.eventType}d`);
       await builder.buildFile(event.filename!, true);
