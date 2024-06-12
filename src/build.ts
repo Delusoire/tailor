@@ -39,7 +39,7 @@ export class Builder {
       this.copyUnknown = opts.copyUnknown;
 
       const { css } = opts.metadata.entries;
-      const scss = css.replace(/\.css$/, ".scss");
+      const scss = css?.replace(/\.css$/, ".scss");
       if (scss) {
          this.cssEntry = path.resolve(this.inputDir, scss);
       }
