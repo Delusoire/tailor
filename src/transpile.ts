@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { ensureDir } from "jsr:@std/fs/ensure-dir";
+
 import swc from "npm:@swc/core@1.5.24";
 import postcss from "npm:postcss@8.4.38";
 
@@ -13,6 +15,7 @@ import autoprefixer from "npm:autoprefixer@10.4.19";
 import atImport from "npm:postcss-import@16.1.0";
 import tailwindcss from "npm:tailwindcss@3.4.3";
 import tailwindcssNesting from "npm:tailwindcss@3.4.3/nesting/index.js";
+
 
 export type { Mapping };
 
@@ -63,6 +66,7 @@ export class Transpiler {
    public async js(input: string, output: string) {
       const buffer = await fs.readFile(input, "utf-8");
       const { code } = await swc.transform(buffer, { ...this.swc_options, filename: input, outputPath: output });
+      await ensureDir(path.dirname(output));
       await fs.writeFile(output, code);
    }
 
@@ -95,6 +99,7 @@ export class Transpiler {
          }),
       ]);
       const p = await PostCSSProcessor.process(buffer, { from: input });
+      await ensureDir(path.dirname(output));
       await fs.writeFile(output, p.css);
    }
 }

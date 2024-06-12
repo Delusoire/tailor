@@ -1,8 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { ensureDir } from "jsr:@std/fs/ensure-dir";
+
 import debounce from "npm:lodash@4.17.21/debounce.js";
 import open from "npm:open@10.1.0";
+
 import type { Transpiler } from "./transpile.ts";
 
 const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
@@ -80,10 +83,11 @@ export class Builder {
       return this.transpiler.css(this.scssInput, this.cssOutput, [Builder.jsGlob]);
    }
 
-   public copyFile(rel: string): Promise<void> {
+   public async copyFile(rel: string): Promise<void> {
       const input = this.getInputPath(rel);
       const output = this.getOutputPath(rel);
-      return fs.copyFile(input, output);
+      await ensureDir(path.dirname(output));
+      await fs.copyFile(input, output);
    }
 
    public async buildFile(file: string, reload = false) {
