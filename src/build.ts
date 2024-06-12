@@ -73,11 +73,6 @@ export class Builder {
       return this.transpiler.css(input, output, [Builder.jsGlob]);
    }
 
-   public copyFile(input: string): Promise<void> {
-      const output = this.getRelPath(input);
-      return fs.copyFile(input, output);
-   }
-
    public async buildFile(file: string, reload = false) {
       const absFile = path.resolve(this.inputDir, file);
       const relFile = path.relative(this.inputDir, file);
@@ -105,7 +100,9 @@ export class Builder {
             break;
          }
          default: {
-            this.copyUnknown && await this.copyFile(relFile);
+            if (this.copyUnknown) {
+               await fs.copyFile(file, this.getRelPath(relFile));
+            }
             break;
          }
       }
