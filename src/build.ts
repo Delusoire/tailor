@@ -26,7 +26,8 @@ export interface BuilderOpts {
 }
 
 export class Builder {
-   cssEntry?: string;
+   scssInput?: string;
+   cssOutput?: string;
    inputDir: string;
    outputDir: string;
    copyUnknown: boolean;
@@ -39,9 +40,12 @@ export class Builder {
       this.copyUnknown = opts.copyUnknown;
 
       const { css } = opts.metadata.entries;
-      const scss = css?.replace(/\.css$/, ".scss");
-      if (scss) {
-         this.cssEntry = path.resolve(this.inputDir, scss);
+      if (css) {
+         const cssInput = path.resolve(this.inputDir, css);
+         const relFile = path.relative(this.inputDir, cssInput);
+
+         this.scssInput = cssInput.replace(/\.css$/, ".scss");
+         this.cssOutput = path.resolve(this.outputDir, relFile);
       }
 
       transpiler.init(this.inputDir);
@@ -55,22 +59,31 @@ export class Builder {
       return Promise.all(ps);
    }
 
-   private getRelPath(p: string) {
-      return path.join(this.outputDir, p);
+   private getInputPath(rel: string) {
+      return path.join(this.inputDir, rel);
    }
 
-   public js(input: string): Promise<void> {
-      const output = this.getRelPath(input.replace(/\.[^\.]+$/, ".js"));
+   private getOutputPath(rel: string) {
+      return path.join(this.outputDir, rel);
+   }
+
+   public js(rel: string): Promise<void> {
+      const input = this.getInputPath(rel);
+      const output = this.getOutputPath(rel.replace(/\.[^\.]+$/, ".js"));
       return this.transpiler.js(input, output);
    }
 
    public css(): Promise<void> {
-      const input = this.cssEntry;
-      if (!input) {
+      if (!this.scssInput || !this.cssOutput) {
          return Promise.reject("couldn't find an entrypoint for css");
       }
-      const output = this.getRelPath(input.replace(/\.[^\.]+$/, ".css"));
-      return this.transpiler.css(input, output, [Builder.jsGlob]);
+      return this.transpiler.css(this.scssInput, this.cssOutput, [Builder.jsGlob]);
+   }
+
+   public copyFile(rel: string): Promise<void> {
+      const input = this.getInputPath(rel);
+      const output = this.getOutputPath(rel);
+      return fs.copyFile(input, output);
    }
 
    public async buildFile(file: string, reload = false) {
@@ -81,7 +94,7 @@ export class Builder {
       }
       switch (path.extname(file)) {
          case ".scss": {
-            if (reload || absFile === this.cssEntry) {
+            if (reload || absFile === this.scssInput) {
                await this.css();
                reload && reloadSpotifyDocument();
             }
@@ -100,9 +113,7 @@ export class Builder {
             break;
          }
          default: {
-            if (this.copyUnknown) {
-               await fs.copyFile(file, this.getRelPath(relFile));
-            }
+            this.copyUnknown && await this.copyFile(relFile);
             break;
          }
       }
