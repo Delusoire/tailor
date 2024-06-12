@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir } from "jsr:@std/fs/ensure-dir";
+import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
 
 import debounce from "npm:lodash@4.17.21/debounce.js";
 import open from "npm:open@10.1.0";

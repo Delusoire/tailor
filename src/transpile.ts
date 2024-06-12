@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir } from "jsr:@std/fs/ensure-dir";
+import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
 
 import swc from "npm:@swc/core@1.5.24";
 import postcss from "npm:postcss@8.4.38";
