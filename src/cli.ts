@@ -51,6 +51,11 @@ const argv = await yargs(Deno.args)
       default: false,
       desc: "watch for file changes"
    })
+   .option("debounce", {
+      type: "number",
+      default: 3000,
+      desc: "debounce time for reloading spotify (set to -1 to disable reloading)"
+   })
    .parse();
 
 let classmap: Mapping = {};
@@ -76,5 +81,5 @@ if (argv.b) {
    await build(builder);
 }
 if (argv.w) {
-   await watch(builder);
+   await watch(builder, argv.debounce);
 }

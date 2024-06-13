@@ -37,6 +37,27 @@ declare const MAP: ${genType(mapping)};
    return fs.writeFile("./classmap.d.ts", dts);
 }
 
+import open from "npm:open@10.1.0";
+
+const debounceTask = (task: () => void) => {
+   let expireAfter = 0;
+   let timeoutId: number | null;
+   return (delay: number) => {
+      const _expireAfter = Date.now() + delay;
+      if (expireAfter >= _expireAfter) {
+         return;
+      }
+      expireAfter = _expireAfter;
+      timeoutId && clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+         timeoutId = null;
+         task();
+      }, delay);
+   };
+};
+
+export const reloadSpotifyDocument = debounceTask(() => open("spotify:app:spicetify:reload"));
+
 export async function build(builder: Builder) {
    const timeStart = Date.now();
 
@@ -45,8 +66,14 @@ export async function build(builder: Builder) {
    console.log(`Build finished in ${(Date.now() - timeStart) / 1000}s!`);
 }
 
-export async function watch(builder: Builder) {
+export async function watch(builder: Builder, debounce: number) {
    console.log("Watching for changes...");
+
+   const onBuildPost = debounce === -1
+      ? () => { }
+      : () => {
+         reloadSpotifyDocument(debounce);
+      };
 
    const watcher = Deno.watchFs(builder.inputDir);
    for await (const event of watcher) {
@@ -55,7 +82,14 @@ export async function watch(builder: Builder) {
             continue;
          }
 
-         await builder.buildFile(builder.getRelativePath(file), { reload: true, log: true });
+         const relFile = builder.getRelativePath(file);
+
+         const onBuildPre = () => {
+            console.log(`Building ${relFile}...`);
+            return true;
+         };
+
+         await builder.buildFile(builder.getRelativePath(file), onBuildPre, onBuildPost);
       }
    }
 }

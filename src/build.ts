@@ -3,13 +3,8 @@ import path from "node:path";
 
 import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
 
-import debounce from "npm:lodash@4.17.21/debounce.js";
-import open from "npm:open@10.1.0";
-
-import type { Transpiler } from "./transpile.ts";
 import { walk } from "jsr:@std/fs@0.229.3/walk";
-
-const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
+import type { Transpiler } from "./transpile.ts";
 
 export type Metadata = any;
 
@@ -91,40 +86,59 @@ export class Builder {
       await fs.copyFile(input, output);
    }
 
-   public async buildFile(relFile: string, opts?: { reload?: boolean; log?: boolean; }) {
-      const { reload = false, log = false } = opts ?? {};
+   private onBuildPre(type: FileType, absFile: string) {
+      if (type === FileType.CSS) {
+         return absFile === this.scssInput;
+      }
+      return true;
+   }
 
+   public async buildFile(relFile: string, onBuildPre?: (type: FileType, absFile: string) => boolean, onBuildPost?: () => void) {
       const absFile = this.getAbsolutePath(relFile);
       if (relFile.includes("node_modules")) {
          return;
       }
-      switch (path.extname(relFile)) {
-         case ".scss": {
-            if (reload || absFile === this.scssInput) {
-               log && console.log("building css", relFile);
-               await this.css();
-               reload && reloadSpotifyDocument();
-            }
-            break;
-         }
-         // deno-lint-ignore no-fallthrough
-         case ".ts":
-            if (relFile.endsWith(".d.ts")) {
-               break;
-            }
-         case ".mjs":
-         case ".jsx":
-         case ".tsx": {
-            log && console.log("building js", relFile);
+      onBuildPre ??= this.onBuildPre.bind(this);
+      const type = parseFileType(relFile);
+      if (!onBuildPre(type, absFile)) {
+         return;
+      }
+      switch (type) {
+         case FileType.JS:
             await this.js(relFile);
-            reload && reloadSpotifyDocument();
             break;
-         }
-         default: {
-            log && console.log("copying", relFile);
+         case FileType.CSS:
+            await this.css();
+            break;
+         case FileType.UNKNOWN:
             this.copyUnknown && await this.copyFile(relFile);
             break;
+      }
+      onBuildPost?.();
+   }
+}
+
+enum FileType {
+   JS,
+   CSS,
+   UNKNOWN
+}
+
+function parseFileType(relFile: string): FileType {
+   switch (path.extname(relFile)) {
+      // deno-lint-ignore no-fallthrough
+      case ".ts":
+         if (relFile.endsWith(".d.ts")) {
+            break;
          }
+      case ".mjs":
+      case ".jsx":
+      case ".tsx": {
+         return FileType.JS;
+      }
+      case ".scss": {
+         return FileType.CSS;
       }
    }
+   return FileType.UNKNOWN;
 }
