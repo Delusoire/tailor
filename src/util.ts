@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import type { Builder } from "./build.ts";
 import type { Mapping } from "./transpile.ts";
 
-
 export async function readJSON<T>(path: string): Promise<T> {
    const file = await fs.readFile(path, "utf-8");
    return JSON.parse(file) as T;
@@ -49,9 +48,14 @@ export async function build(builder: Builder) {
 export async function watch(builder: Builder) {
    console.log("Watching for changes...");
 
-   const watcher = fs.watch(builder.inputDir, { recursive: true });
+   const watcher = Deno.watchFs(builder.inputDir);
    for await (const event of watcher) {
-      console.log(`${event.filename} was ${event.eventType}d`);
-      await builder.buildFile(event.filename!, true);
+      for (const file of event.paths) {
+         if (event.kind !== "modify") {
+            continue;
+         }
+
+         await builder.buildFile(builder.getRelativePath(file), { reload: true, log: true });
+      }
    }
 }

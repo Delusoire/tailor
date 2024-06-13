@@ -7,19 +7,11 @@ import debounce from "npm:lodash@4.17.21/debounce.js";
 import open from "npm:open@10.1.0";
 
 import type { Transpiler } from "./transpile.ts";
+import { walk } from "jsr:@std/fs@0.229.3/walk";
 
 const reloadSpotifyDocument = debounce(() => open("spotify:app:rpc:reload"), 3000);
 
 export type Metadata = any;
-
-async function* fs_walk(dir: string): AsyncGenerator<string> {
-   for await (const d of await fs.opendir(dir, { bufferSize: 32 })) {
-      const entry = path.join(dir, d.name);
-      if (d.isDirectory()) yield* fs_walk(entry);
-      else if (d.isFile()) yield entry;
-   }
-}
-
 
 export interface BuilderOpts {
    metadata: Metadata;
@@ -56,10 +48,19 @@ export class Builder {
 
    public async build(): Promise<void[]> {
       const ps = [];
-      for await (const file of fs_walk(this.inputDir)) {
-         ps.push(this.buildFile(file));
+      const walker = walk(this.inputDir, { includeDirs: false });
+      for await (const file of walker) {
+         ps.push(this.buildFile(file.path));
       }
       return Promise.all(ps);
+   }
+
+   public getRelativePath(abs: string) {
+      return path.relative(this.inputDir, abs);
+   }
+
+   public getAbsolutePath(rel: string) {
+      return path.resolve(this.inputDir, rel);
    }
 
    private getInputPath(rel: string) {
@@ -90,15 +91,17 @@ export class Builder {
       await fs.copyFile(input, output);
    }
 
-   public async buildFile(file: string, reload = false) {
-      const absFile = path.resolve(this.inputDir, file);
-      const relFile = path.relative(this.inputDir, file);
+   public async buildFile(relFile: string, opts?: { reload?: boolean; log?: boolean; }) {
+      const { reload = false, log = false } = opts ?? {};
+
+      const absFile = this.getAbsolutePath(relFile);
       if (relFile.includes("node_modules")) {
          return;
       }
-      switch (path.extname(file)) {
+      switch (path.extname(relFile)) {
          case ".scss": {
             if (reload || absFile === this.scssInput) {
+               log && console.log("building css", relFile);
                await this.css();
                reload && reloadSpotifyDocument();
             }
@@ -106,17 +109,19 @@ export class Builder {
          }
          // deno-lint-ignore no-fallthrough
          case ".ts":
-            if (file.endsWith(".d.ts")) {
+            if (relFile.endsWith(".d.ts")) {
                break;
             }
          case ".mjs":
          case ".jsx":
          case ".tsx": {
+            log && console.log("building js", relFile);
             await this.js(relFile);
             reload && reloadSpotifyDocument();
             break;
          }
          default: {
+            log && console.log("copying", relFile);
             this.copyUnknown && await this.copyFile(relFile);
             break;
          }
