@@ -16,6 +16,9 @@ import atImport from "npm:postcss-import@16.1.0";
 import tailwindcss from "npm:tailwindcss@3.4.3";
 import tailwindcssNesting from "npm:tailwindcss@3.4.3/nesting/index.js";
 
+// const t = await fs.readFile("C:\\Users\\Delusoire\\Dev\\bespoke\\Delusoire-modules\\transpile.ts");
+const t = path.resolve("./transpile.ts");
+console.log("/" + t);
 
 export type { Mapping };
 
@@ -30,8 +33,8 @@ export class Transpiler {
             baseUrl: path.resolve(baseUrl),
             experimental: {
                plugins: [
-                  [swcPluginRemapper(), { mapping: { MAP: this.classmap } }],
-                  [swcPluginTransformModuleSpecifiers(), {
+                  [path.resolve(swcPluginRemapper()), { mapping: { MAP: this.classmap } }],
+                  [path.resolve(swcPluginTransformModuleSpecifiers()), {
                      extensions: [
                         [".ts", ".js"],
                         [".mjs", ".js"],
