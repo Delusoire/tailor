@@ -4,7 +4,7 @@ import path from "node:path";
 import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
 import { fromFileUrl } from "jsr:@std/path@0.225.2/from-file-url";
 
-import swc from "npm:@swc/core@1.5.24";
+import swc from "npm:@swc/core@1.5.29";
 import postcss from "npm:postcss@8.4.38";
 
 import postcssPluginRemapper, {
@@ -26,6 +26,14 @@ export class Transpiler {
    public init(baseUrl: string) {
       this.swc_options = {
          isModule: true,
+         module: {
+            type: "es6",
+            strict: true,
+            strictMode: true,
+            lazy: false,
+            importInterop: "none",
+            resolveFully: true
+         },
          jsc: {
             baseUrl: path.resolve(baseUrl),
             experimental: {
@@ -45,7 +53,6 @@ export class Transpiler {
             loose: false,
             parser: {
                decorators: true,
-               dynamicImport: true,
                syntax: "typescript",
                tsx: true,
             },

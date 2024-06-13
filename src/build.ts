@@ -100,7 +100,7 @@ export class Builder {
       }
       onBuildPre ??= this.onBuildPre.bind(this);
       const type = parseFileType(file);
-      const absFile = this.getAbsolutePath(file);
+      const absFile = this.getAbsolutePath(relFile);
       if (!onBuildPre(type, absFile)) {
          return;
       }
