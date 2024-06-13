@@ -9,8 +9,8 @@ import postcss from "npm:postcss@8.4.38";
 import postcssPluginRemapper, {
    type Mapping,
 } from "jsr:@delu/postcss-plugin-remapper@0.1.1";
-import swcPluginRemapper from "npm:@delusoire/swc-plugin-remapper@0.1.1";
-import swcPluginTransformModuleSpecifiers from "npm:@delusoire/swc-plugin-transform-module-specifiers@0.1.2";
+import swcPluginRemapper from "npm:@delusoire/swc-plugin-remapper@0.1.3";
+import swcPluginTransformModuleSpecifiers from "npm:@delusoire/swc-plugin-transform-module-specifiers@0.1.3";
 import autoprefixer from "npm:autoprefixer@10.4.19";
 import atImport from "npm:postcss-import@16.1.0";
 import tailwindcss from "npm:tailwindcss@3.4.3";
