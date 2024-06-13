@@ -39,7 +39,9 @@ declare const MAP: ${genType(mapping)};
 
 import open from "npm:open@10.1.0";
 
-const debounceTask = (task: () => void) => {
+type DebouncedTask = (delay: number) => void;
+
+const debounceTask = (task: () => void): DebouncedTask => {
    let expireAfter = 0;
    let timeoutId: number | null;
    return (delay: number) => {
@@ -56,7 +58,7 @@ const debounceTask = (task: () => void) => {
    };
 };
 
-export const reloadSpotifyDocument = debounceTask(() => open("spotify:app:spicetify:reload"));
+export const reloadSpotifyDocument: DebouncedTask = debounceTask(() => open("spotify:app:spicetify:reload"));
 
 export async function build(builder: Builder) {
    const timeStart = Date.now();
