@@ -84,14 +84,12 @@ export async function watch(builder: Builder, debounce: number) {
             continue;
          }
 
-         const relFile = builder.getRelativePath(file);
-
          const onBuildPre = () => {
-            console.log(`Building ${relFile}...`);
+            console.log(`Building ${file}...`);
             return true;
          };
 
-         await builder.buildFile(builder.getRelativePath(file), onBuildPre, onBuildPost);
+         await builder.buildFile(file, onBuildPre, onBuildPost);
       }
    }
 }

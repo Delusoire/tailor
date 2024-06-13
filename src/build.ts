@@ -93,13 +93,14 @@ export class Builder {
       return true;
    }
 
-   public async buildFile(relFile: string, onBuildPre?: (type: FileType, absFile: string) => boolean, onBuildPost?: () => void) {
-      const absFile = this.getAbsolutePath(relFile);
+   public async buildFile(file: string, onBuildPre?: (type: FileType, absFile: string) => boolean, onBuildPost?: () => void) {
+      const relFile = this.getRelativePath(file);
       if (relFile.includes("node_modules")) {
          return;
       }
       onBuildPre ??= this.onBuildPre.bind(this);
-      const type = parseFileType(relFile);
+      const type = parseFileType(file);
+      const absFile = this.getAbsolutePath(file);
       if (!onBuildPre(type, absFile)) {
          return;
       }
