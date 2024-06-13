@@ -55,11 +55,11 @@ export class Builder {
       return Promise.all(ps);
    }
 
-   public getRelativePath(abs: string) {
+   public getRelativePath(abs: string): string {
       return path.relative(this.inputDir, abs);
    }
 
-   public getAbsolutePath(rel: string) {
+   public getAbsolutePath(rel: string): string {
       return path.resolve(this.inputDir, rel);
    }
 
