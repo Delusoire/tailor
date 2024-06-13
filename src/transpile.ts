@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
+import { fromFileUrl } from "jsr:@std/path@0.225.2/from-file-url";
 
 import swc from "npm:@swc/core@1.5.24";
 import postcss from "npm:postcss@8.4.38";
@@ -29,8 +30,8 @@ export class Transpiler {
             baseUrl: path.resolve(baseUrl),
             experimental: {
                plugins: [
-                  [path.resolve(swcPluginRemapper()), { mapping: { MAP: this.classmap } }],
-                  [path.resolve(swcPluginTransformModuleSpecifiers()), {
+                  [fromFileUrl(swcPluginRemapper()), { mapping: { MAP: this.classmap } }],
+                  [fromFileUrl(swcPluginTransformModuleSpecifiers()), {
                      extensions: [
                         [".ts", ".js"],
                         [".mjs", ".js"],
