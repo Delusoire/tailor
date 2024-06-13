@@ -32,6 +32,7 @@ export class Transpiler {
             strictMode: true,
             lazy: false,
             importInterop: "none",
+            // @ts-ignore
             resolveFully: true
          },
          jsc: {
