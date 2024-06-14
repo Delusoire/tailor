@@ -1,10 +1,9 @@
 
-import fs from "node:fs/promises";
 import type { Builder } from "./build.ts";
 import type { Mapping } from "./transpile.ts";
 
 export async function readJSON<T>(path: string): Promise<T> {
-   const file = await fs.readFile(path, "utf-8");
+   const file = await Deno.readTextFile(path);
    return JSON.parse(file) as T;
 }
 
@@ -34,7 +33,7 @@ declare const MAP: ${genType(mapping)};
 
    console.log("Writing classmap declaration...");
 
-   return fs.writeFile("./classmap.d.ts", dts);
+   return Deno.writeTextFile("./classmap.d.ts", dts);
 }
 
 import open from "npm:open@10.1.0";

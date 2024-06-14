@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
@@ -72,10 +71,9 @@ export class Transpiler {
    }
 
    public async js(input: string, output: string) {
-      const buffer = await fs.readFile(input, "utf-8");
+      const buffer = await Deno.readTextFile(input);
       const { code } = await swc.transform(buffer, { ...this.swc_options, filename: input, outputPath: output });
-      await ensureDir(path.dirname(output));
-      await fs.writeFile(output, code);
+      await Deno.writeTextFile(output, code);
    }
 
    public async css(input: string, output: string, files: string[]) {
@@ -89,7 +87,7 @@ export class Transpiler {
          return Object.fromEntries(reformattedEntries);
       }
 
-      const buffer = await fs.readFile(input, "utf-8");
+      const buffer = await Deno.readTextFile(input);
       const PostCSSProcessor = await postcss.default([
          atImport(),
          tailwindcssNesting(),
@@ -108,6 +106,6 @@ export class Transpiler {
       ]);
       const p = await PostCSSProcessor.process(buffer, { from: input });
       await ensureDir(path.dirname(output));
-      await fs.writeFile(output, p.css);
+      await Deno.writeTextFile(output, p.css);
    }
 }
