@@ -57,7 +57,7 @@ const debounceTask = (task: () => void): DebouncedTask => {
    };
 };
 
-export const reloadSpotifyDocument: DebouncedTask = debounceTask(() => open("spotify:app:spicetify:reload"));
+export const reloadSpotifyDocument: DebouncedTask = debounceTask(() => open("spotify:app:rpc:reload"));
 
 export async function build(builder: Builder) {
    const timeStart = Date.now();
