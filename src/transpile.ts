@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
+import { ensureFile } from "jsr:@std/fs@0.229.3/ensure-file";
 import { fromFileUrl } from "jsr:@std/path@0.225.2/from-file-url";
 
 import swc from "npm:@swc/core@1.5.29";
@@ -73,6 +73,7 @@ export class Transpiler {
    public async js(input: string, output: string) {
       const buffer = await Deno.readTextFile(input);
       const { code } = await swc.transform(buffer, { ...this.swc_options, filename: input, outputPath: output });
+      await ensureFile(output);
       await Deno.writeTextFile(output, code);
    }
 
@@ -105,7 +106,7 @@ export class Transpiler {
          }),
       ]);
       const p = await PostCSSProcessor.process(buffer, { from: input });
-      await ensureDir(path.dirname(output));
+      await ensureFile(output);
       await Deno.writeTextFile(output, p.css);
    }
 }
