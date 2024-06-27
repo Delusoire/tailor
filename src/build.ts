@@ -91,7 +91,7 @@ export class Builder {
       const input = this.getInputPath(rel);
       const output = this.getOutputPath(rel.replace(/\.[^\.]+$/, ".js"));
       await this.transpiler.js(input, output);
-      const path = `/modules${this.identifier}/${fromFileUrl(toFileUrl(rel))}`;
+      const path = `/modules${this.identifier}${fromFileUrl(toFileUrl("/" + rel))}`;
       this.imports.push(path);
    }
 

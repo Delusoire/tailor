@@ -1,7 +1,7 @@
 import path from "node:path";
 
-import { ensureFile } from "jsr:@std/fs@0.229.3/ensure-file";
-import { fromFileUrl } from "jsr:@std/path@0.225.2/from-file-url";
+import { ensureFile } from "jsr:@std/fs@1.0.0-rc.2/ensure-file";
+import { fromFileUrl } from "jsr:@std/path@1.0.0-rc.2/from-file-url";
 
 import swc from "npm:@swc/core@1.5.29";
 import postcss from "npm:postcss@8.4.38";
