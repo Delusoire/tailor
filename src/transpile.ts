@@ -79,7 +79,7 @@ export class Transpiler {
 
    public async css(input: string, output: string, files: string[]) {
       function reformatClassmap(classmap: Mapping) {
-         const reformattedEntries = Object.keys(classmap).map(([k, v]) => {
+         const reformattedEntries = Object.entries(classmap).map(([k, v]) => {
             if (typeof v === "object") {
                v = reformatClassmap(v);
             }
