@@ -71,14 +71,20 @@ export async function build(builder: Builder) {
    console.log(`Build finished in ${(Date.now() - timeStart) / 1000}s!`);
 }
 
-export async function watch(builder: Builder, debounce: number, module?: string | undefined | null) {
+export async function watch(builder: Builder, debounce: number) {
    console.log("Watching for changes...");
 
-   const debouncedReloadModuleTask = getDebouncedReloadModuleTask(module);
+   const module = builder.identifier;
+   const reloadRpcScheme = "spotify:app:rpc:reload";
+   const url = builder.identifier == null ? reloadRpcScheme : `${reloadRpcScheme}?module=${module}`;
+   const debouncedTask = debounceTask(async () => {
+      await builder.writeImportMap();
+      await open(url);
+   });
 
    const onBuildPost = debounce < 0
       ? () => { }
-      : () => { debouncedReloadModuleTask(debounce); };
+      : () => { debouncedTask(debounce); };
 
    const watcher = Deno.watchFs(builder.inputDir);
    for await (const event of watcher) {

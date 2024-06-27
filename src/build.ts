@@ -5,11 +5,13 @@ import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
 
 import { walk } from "jsr:@std/fs@0.229.3/walk";
 import type { Transpiler } from "./transpile.ts";
+import { readJSON } from "./util.ts";
 
 export type Metadata = any;
 
 export interface BuilderOpts {
    metadata: Metadata;
+   identifier: string;
    inputDir: string;
    outputDir: string;
    copyUnknown: boolean;
@@ -18,6 +20,9 @@ export interface BuilderOpts {
 export class Builder {
    scssInput?: string;
    cssOutput?: string;
+   importMap?: string;
+   imports: string[] = [];
+   identifier: string;
    inputDir: string;
    outputDir: string;
    copyUnknown: boolean;
@@ -25,11 +30,12 @@ export class Builder {
    private static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
 
    public constructor(private transpiler: Transpiler, opts: BuilderOpts) {
+      this.identifier = opts.identifier;
       this.inputDir = opts.inputDir;
       this.outputDir = opts.outputDir;
       this.copyUnknown = opts.copyUnknown;
 
-      const { css } = opts.metadata.entries;
+      const { css, importMap } = opts.metadata.entries;
       if (css) {
          const cssInput = path.resolve(this.inputDir, css);
          const relFile = path.relative(this.inputDir, cssInput);
@@ -37,17 +43,33 @@ export class Builder {
          this.scssInput = cssInput.replace(/\.css$/, ".scss");
          this.cssOutput = path.resolve(this.outputDir, relFile);
       }
+      this.importMap = importMap;
 
       transpiler.init(this.inputDir);
    }
 
-   public async build(): Promise<void[]> {
+   public async writeImportMap() {
+      if (!this.importMap) {
+         return;
+      }
+      const now = Date.now();
+      const imports = Object.fromEntries(
+         this.imports
+            .map(i => `/modules${this.identifier}/${i}`)
+            .map(i => [i, `${i}?t=${now}`])
+      );
+      await Deno.writeTextFile(this.getOutputPath("import_map.json"), JSON.stringify({ imports }));
+   }
+
+   public async build(): Promise<void> {
       const ps = [];
       const walker = walk(this.inputDir, { includeDirs: false });
+      this.imports = [];
       for await (const file of walker) {
          ps.push(this.buildFile(file.path));
       }
-      return Promise.all(ps);
+      await Promise.all(ps);
+      this.writeImportMap();
    }
 
    public getRelativePath(abs: string): string {
@@ -66,17 +88,18 @@ export class Builder {
       return path.join(this.outputDir, rel);
    }
 
-   public js(rel: string): Promise<void> {
+   public async js(rel: string): Promise<void> {
       const input = this.getInputPath(rel);
       const output = this.getOutputPath(rel.replace(/\.[^\.]+$/, ".js"));
-      return this.transpiler.js(input, output);
+      await this.transpiler.js(input, output);
+      this.imports.push(rel);
    }
 
-   public css(): Promise<void> {
+   public async css(): Promise<void> {
       if (!this.scssInput || !this.cssOutput) {
          return Promise.reject("couldn't find an entrypoint for css");
       }
-      return this.transpiler.css(this.scssInput, this.cssOutput, [Builder.jsGlob]);
+      await this.transpiler.css(this.scssInput, this.cssOutput, [Builder.jsGlob]);
    }
 
    public async copyFile(rel: string): Promise<void> {

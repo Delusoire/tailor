@@ -59,7 +59,8 @@ const argv = await yargs(Deno.args)
    })
    .option("module", {
       type: "string",
-      desc: "module to reload in watch mode"
+      desc: "module identifier",
+      demandOption: true
    })
    .parse();
 
@@ -77,6 +78,7 @@ if (argv.d) {
 const transpiler = new Transpiler(classmap);
 const builder = new Builder(transpiler, {
    metadata,
+   identifier: argv.module,
    inputDir: argv.i,
    outputDir: argv.o,
    copyUnknown: argv.copy
@@ -86,5 +88,5 @@ if (argv.b) {
    await build(builder);
 }
 if (argv.w) {
-   await watch(builder, argv.debounce, argv.module);
+   await watch(builder, argv.debounce);
 }

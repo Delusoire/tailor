@@ -23,8 +23,7 @@ export class Transpiler {
    public constructor(private classmap: Mapping) { }
 
    public init(baseUrl: string) {
-      const timestamp = Date.now();
-      const ext = `.js?bt=${timestamp}`;
+      const ext = ".js";
 
       this.swc_options = {
          isModule: true,
