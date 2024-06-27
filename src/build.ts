@@ -1,11 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir } from "jsr:@std/fs@0.229.3/ensure-dir";
+import { ensureDir } from "jsr:@std/fs@1.0.0-rc.2/ensure-dir";
 
-import { walk } from "jsr:@std/fs@0.229.3/walk";
+import { walk } from "jsr:@std/fs@1.0.0-rc.2/walk";
 import type { Transpiler } from "./transpile.ts";
-import { readJSON } from "./util.ts";
+import { toFileUrl } from "jsr:@std/path@1.0.0-rc.2/to-file-url";
+import { fromFileUrl } from "jsr:@std/path@1.0.0-rc.2/posix/from-file-url";
 
 export type Metadata = any;
 
@@ -54,9 +55,7 @@ export class Builder {
       }
       const now = Date.now();
       const imports = Object.fromEntries(
-         this.imports
-            .map(i => `/modules${this.identifier}/${i}`)
-            .map(i => [i, `${i}?t=${now}`])
+         this.imports.map(i => [i, `${i}?t=${now}`])
       );
       await Deno.writeTextFile(this.getOutputPath("import_map.json"), JSON.stringify({ imports }));
    }
@@ -92,7 +91,8 @@ export class Builder {
       const input = this.getInputPath(rel);
       const output = this.getOutputPath(rel.replace(/\.[^\.]+$/, ".js"));
       await this.transpiler.js(input, output);
-      this.imports.push(rel);
+      const path = `/modules${this.identifier}/${fromFileUrl(toFileUrl(rel))}`;
+      this.imports.push(path);
    }
 
    public async css(): Promise<void> {
