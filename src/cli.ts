@@ -5,6 +5,7 @@ import path from "node:path";
 import { Builder, type Metadata } from "./build.ts";
 import { Transpiler, type Mapping } from "./transpile.ts";
 
+// @deno-types="npm:@types/yargs@17.0.32"
 import yargs from 'npm:yargs@17.7.2';
 import { build, readJSON, watch, writeClassMapDts } from "./util.ts";
 
@@ -56,6 +57,10 @@ const argv = await yargs(Deno.args)
       default: 3000,
       desc: "debounce time for reloading spotify (set to -1 to disable reloading)"
    })
+   .option("module", {
+      type: "string",
+      desc: "module to reload in watch mode"
+   })
    .parse();
 
 let classmap: Mapping = {};
@@ -81,5 +86,5 @@ if (argv.b) {
    await build(builder);
 }
 if (argv.w) {
-   await watch(builder, argv.debounce);
+   await watch(builder, argv.debounce, argv.module);
 }

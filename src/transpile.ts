@@ -24,7 +24,7 @@ export class Transpiler {
 
    public init(baseUrl: string) {
       const timestamp = Date.now();
-      const ext = `.js?t=${timestamp}`;
+      const ext = `.js?bt=${timestamp}`;
 
       this.swc_options = {
          isModule: true,

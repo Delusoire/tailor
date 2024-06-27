@@ -57,7 +57,11 @@ const debounceTask = (task: () => void): DebouncedTask => {
    };
 };
 
-export const reloadSpotifyDocument: DebouncedTask = debounceTask(() => open("spotify:app:rpc:reload"));
+export const getDebouncedReloadModuleTask: (module?: string | undefined | null) => DebouncedTask = (module?: string | undefined | null) => {
+   const reloadRpcScheme = "spotify:app:rpc:reload";
+   const url = module == null ? reloadRpcScheme : `${reloadRpcScheme}?module=${module}`;
+   return debounceTask(() => open(url));
+};
 
 export async function build(builder: Builder) {
    const timeStart = Date.now();
@@ -67,14 +71,14 @@ export async function build(builder: Builder) {
    console.log(`Build finished in ${(Date.now() - timeStart) / 1000}s!`);
 }
 
-export async function watch(builder: Builder, debounce: number) {
+export async function watch(builder: Builder, debounce: number, module?: string | undefined | null) {
    console.log("Watching for changes...");
 
-   const onBuildPost = debounce === -1
+   const debouncedReloadModuleTask = getDebouncedReloadModuleTask(module);
+
+   const onBuildPost = debounce < 0
       ? () => { }
-      : () => {
-         reloadSpotifyDocument(debounce);
-      };
+      : () => { debouncedReloadModuleTask(debounce); };
 
    const watcher = Deno.watchFs(builder.inputDir);
    for await (const event of watcher) {
