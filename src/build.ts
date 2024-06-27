@@ -89,9 +89,10 @@ export class Builder {
 
    public async js(rel: string): Promise<void> {
       const input = this.getInputPath(rel);
-      const output = this.getOutputPath(rel.replace(/\.[^\.]+$/, ".js"));
+      const relJs = rel.slice(0, rel.lastIndexOf(".")) + ".js";
+      const output = this.getOutputPath(relJs);
       await this.transpiler.js(input, output);
-      const path = `/modules${this.identifier}${fromFileUrl(toFileUrl("/" + rel))}`;
+      const path = `/modules${this.identifier}${fromFileUrl(toFileUrl("/" + relJs))}`;
       this.imports.push(path);
    }
 
