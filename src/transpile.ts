@@ -23,6 +23,9 @@ export class Transpiler {
    public constructor(private classmap: Mapping) { }
 
    public init(baseUrl: string) {
+      const timestamp = Date.now();
+      const ext = `.js?t=${timestamp}`;
+
       this.swc_options = {
          isModule: true,
          module: {
@@ -41,11 +44,12 @@ export class Transpiler {
                   [fromFileUrl(swcPluginRemapper()), { mapping: { MAP: this.classmap } }],
                   [fromFileUrl(swcPluginTransformModuleSpecifiers()), {
                      extensions: [
-                        [".ts", ".js"],
-                        [".mjs", ".js"],
-                        [".mts", ".js"],
-                        [".jsx", ".js"],
-                        [".tsx", ".js"],
+                        [".js", ext],
+                        [".ts", ext],
+                        [".mjs", ext],
+                        [".mts", ext],
+                        [".jsx", ext],
+                        [".tsx", ext],
                      ],
                   }],
                ],
