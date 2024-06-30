@@ -1,5 +1,4 @@
 use crate::config::PluginConfig;
-
 use swc_core::ecma::ast::{
     CallExpr, Callee, ExportAll, Expr, ExprOrSpread, ImportDecl, Lit, NamedExport, Str,
 };
@@ -10,21 +9,20 @@ pub struct TransformVisitor {
 }
 
 impl TransformVisitor {
-    fn rewrite_extension(&self, filename: &str) -> Option<String> {
-        self.config
-            .extensions
-            .iter()
-            .find_map(|(ext1, ext2)| Some(filename.strip_suffix(ext1)?.to_string() + ext2.as_str()))
+    fn rewrite_import_path(&self, path: String) -> String {
+        self.config.rules.iter().fold(path, |path, (regex, repl)| {
+            regex.replace_all(&path, repl).into_owned()
+        })
     }
 
     fn rewrite_import_specifier(&self, specifier: &str) -> Option<String> {
         let source_specifier = specifier;
 
-        if (specifier.starts_with("http://") || specifier.starts_with("https://")) {
+        if specifier.starts_with("http://") || specifier.starts_with("https://") {
             return None;
         }
 
-        let new_specifier = self.rewrite_extension(specifier)?;
+        let new_specifier = self.rewrite_import_path(specifier.to_string());
 
         if new_specifier == source_specifier {
             return None;

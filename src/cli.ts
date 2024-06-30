@@ -54,13 +54,17 @@ const argv = await yargs(Deno.args)
    })
    .option("debounce", {
       type: "number",
-      default: 3000,
-      desc: "debounce time for reloading spotify (set to -1 to disable reloading)"
+      default: Number.NEGATIVE_INFINITY,
+      desc: "debounce time for reloading spotify (default is disabled)"
    })
    .option("module", {
       type: "string",
       desc: "module identifier",
       demandOption: true
+   })
+   .option("dev", {
+      type: "boolean",
+      default: false
    })
    .parse();
 
@@ -75,7 +79,7 @@ if (argv.d) {
    await writeClassMapDts(classmap);
 }
 
-const transpiler = new Transpiler(classmap);
+const transpiler = new Transpiler(classmap, argv.dev);
 const builder = new Builder(transpiler, {
    metadata,
    identifier: argv.module,

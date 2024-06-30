@@ -1,7 +1,6 @@
-mod config;
-mod visitor;
+extern crate swc_core;
 
-use config::PluginConfig;
+use std::convert::TryInto;
 use swc_core::{
     ecma::{
         ast::Program,
@@ -9,15 +8,16 @@ use swc_core::{
     },
     plugin::{plugin_transform, proxies::TransformPluginProgramMetadata},
 };
-use visitor::TransformVisitor;
 
 #[plugin_transform]
 pub fn process_transform(program: Program, metadata: TransformPluginProgramMetadata) -> Program {
-    let config = serde_json::from_str::<PluginConfig>(
+    let config = serde_json::from_str::<transform::config::PluginConfig>(
         &metadata
             .get_transform_plugin_config()
             .expect("failed to get plugin config"),
     )
     .expect("invalid config");
-    program.fold_with(&mut as_folder(TransformVisitor { config }))
+    program.fold_with(&mut as_folder(transform::visitor::TransformVisitor {
+        config,
+    }))
 }

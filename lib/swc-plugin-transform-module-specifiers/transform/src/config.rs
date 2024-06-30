@@ -1,9 +1,10 @@
 use serde::Deserialize;
+use swc_cached::regex::CachedRegex;
 
-type Extensions = Vec<(String, String)>;
+type Rules = Vec<(CachedRegex, String)>;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PluginConfig {
     #[serde(default)]
-    pub extensions: Extensions,
+    pub rules: Rules,
 }

@@ -1,12 +1,10 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
-import { ensureDir } from "jsr:@std/fs@1.0.0-rc.2/ensure-dir";
-
+import { ensureFile } from "jsr:@std/fs@1.0.0-rc.2/ensure-file";
+import { expandGlobSync } from "jsr:@std/fs@1.0.0-rc.2/expand-glob";
 import { walk } from "jsr:@std/fs@1.0.0-rc.2/walk";
+
 import type { Transpiler } from "./transpile.ts";
-import { toFileUrl } from "jsr:@std/path@1.0.0-rc.2/to-file-url";
-import { fromFileUrl } from "jsr:@std/path@1.0.0-rc.2/posix/from-file-url";
 
 export type Metadata = any;
 
@@ -19,10 +17,8 @@ export interface BuilderOpts {
 }
 
 export class Builder {
+   scriptsInput?: Set<string>;
    scssInput?: string;
-   cssOutput?: string;
-   importMap?: string;
-   imports: string[] = [];
    identifier: string;
    inputDir: string;
    outputDir: string;
@@ -36,39 +32,60 @@ export class Builder {
       this.outputDir = opts.outputDir;
       this.copyUnknown = opts.copyUnknown;
 
-      const { css, importMap } = opts.metadata.entries;
-      if (css) {
-         const cssInput = path.resolve(this.inputDir, css);
-         const relFile = path.relative(this.inputDir, cssInput);
-
-         this.scssInput = cssInput.replace(/\.css$/, ".scss");
-         this.cssOutput = path.resolve(this.outputDir, relFile);
+      const { js, css } = opts.metadata.entries;
+      if (js) {
+         const scriptWalkEntries = Array.from(expandGlobSync(Builder.jsGlob, { root: this.inputDir }));
+         this.scriptsInput = new Set(scriptWalkEntries.map(entry => entry.path));
       }
-      this.importMap = importMap;
+      if (css) {
+         const cssInput = this.getAbsolutePath(css);
+         this.scssInput = cssInput.replace(/\.css$/, ".scss");
+      }
 
       transpiler.init(this.inputDir);
    }
 
-   public async writeImportMap() {
-      if (!this.importMap) {
-         return;
+   public async parseFile(file: string) {
+      const relFile = this.getRelativePath(file);
+      const type = parseFileType(file);
+      switch (type) {
+         case FileType.JS:
+            this.scriptsInput?.add(relFile);
+            break;
+         case FileType.UNKNOWN:
+            this.copyUnknown && await this.copyFile(relFile);
+            break;
       }
-      const now = Date.now();
-      const imports = Object.fromEntries(
-         this.imports.map(i => [i, `${i}?t=${now}`])
-      );
-      await Deno.writeTextFile(this.getOutputPath("import_map.json"), JSON.stringify({ imports }));
    }
 
    public async build(): Promise<void> {
-      const ps = [];
-      const walker = walk(this.inputDir, { includeDirs: false });
-      this.imports = [];
-      for await (const file of walker) {
-         ps.push(this.buildFile(file.path));
+      const now = Date.now();
+
+      if (this.scriptsInput) {
+         this.scriptsInput = new Set;
       }
-      await Promise.all(ps);
-      this.writeImportMap();
+
+      {
+         const ps = [];
+
+         const walker = walk(this.inputDir, { includeDirs: false });
+         for await (const file of walker) {
+            ps.push(this.parseFile(file.path));
+         }
+
+         if (this.scriptsInput) {
+            ps.push(this.js());
+         }
+         if (this.scssInput) {
+            ps.push(this.css());
+         }
+
+         await Promise.all(ps);
+      }
+
+      const timestamp = this.getOutputPath("timestamp");
+      await ensureFile(timestamp);
+      await Deno.writeTextFile(timestamp, String(now));
    }
 
    public getRelativePath(abs: string): string {
@@ -79,67 +96,45 @@ export class Builder {
       return path.resolve(this.inputDir, rel);
    }
 
-   private getInputPath(rel: string) {
-      return path.join(this.inputDir, rel);
+   private getInputPath(relToProj: string) {
+      return path.join(this.inputDir, relToProj);
    }
 
-   private getOutputPath(rel: string) {
-      return path.join(this.outputDir, rel);
+   private getOutputPath(relToProj: string) {
+      return path.join(this.outputDir, relToProj);
    }
 
-   public async js(rel: string): Promise<void> {
-      const input = this.getInputPath(rel);
-      const relJs = rel.slice(0, rel.lastIndexOf(".")) + ".js";
-      const output = this.getOutputPath(relJs);
-      await this.transpiler.js(input, output);
-      const path = `/modules${this.identifier}${fromFileUrl(toFileUrl("/" + relJs))}`;
-      this.imports.push(path);
+   public async js(): Promise<void> {
+      if (!this.scriptsInput) {
+         return Promise.reject("couldn't find any entrypoint for js");
+      }
+      for (const input of this.scriptsInput) {
+         const rel = this.getRelativePath(input);
+         const relJs = rel.slice(0, rel.lastIndexOf(".")) + ".js";
+         const output = this.getOutputPath(relJs);
+         await this.transpiler.js(input, output);
+      }
    }
 
    public async css(): Promise<void> {
-      if (!this.scssInput || !this.cssOutput) {
+      if (!this.scssInput) {
          return Promise.reject("couldn't find an entrypoint for css");
       }
-      await this.transpiler.css(this.scssInput, this.cssOutput, [Builder.jsGlob]);
+      const input = this.scssInput;
+      const rel = this.getRelativePath(input);
+      const relCss = rel.slice(0, rel.lastIndexOf(".")) + ".css";
+      const output = this.getOutputPath(relCss);
+      await this.transpiler.css(input, output, Array.from(this.scriptsInput ?? []));
    }
 
    public async copyFile(rel: string): Promise<void> {
+      if (!this.copyUnknown) {
+         return Promise.reject("can't copy unknown files when copyUnknown is false");
+      }
       const input = this.getInputPath(rel);
       const output = this.getOutputPath(rel);
-      await ensureDir(path.dirname(output));
-      await fs.copyFile(input, output);
-   }
-
-   private onBuildPre(type: FileType, absFile: string) {
-      if (type === FileType.CSS) {
-         return absFile === this.scssInput;
-      }
-      return true;
-   }
-
-   public async buildFile(file: string, onBuildPre?: (type: FileType, absFile: string) => boolean, onBuildPost?: () => void) {
-      const relFile = this.getRelativePath(file);
-      if (relFile.includes("node_modules")) {
-         return;
-      }
-      onBuildPre ??= this.onBuildPre.bind(this);
-      const type = parseFileType(file);
-      const absFile = this.getAbsolutePath(relFile);
-      if (!onBuildPre(type, absFile)) {
-         return;
-      }
-      switch (type) {
-         case FileType.JS:
-            await this.js(relFile);
-            break;
-         case FileType.CSS:
-            await this.css();
-            break;
-         case FileType.UNKNOWN:
-            this.copyUnknown && await this.copyFile(relFile);
-            break;
-      }
-      onBuildPost?.();
+      await ensureFile(output);
+      await Deno.copyFile(input, output);
    }
 }
 
@@ -149,8 +144,9 @@ enum FileType {
    UNKNOWN
 }
 
-function parseFileType(relFile: string): FileType {
+export function parseFileType(relFile: string): FileType {
    switch (path.extname(relFile)) {
+      case ".js":
       // deno-lint-ignore no-fallthrough
       case ".ts":
          if (relFile.endsWith(".d.ts")) {
@@ -161,6 +157,7 @@ function parseFileType(relFile: string): FileType {
       case ".tsx": {
          return FileType.JS;
       }
+      case ".css":
       case ".scss": {
          return FileType.CSS;
       }

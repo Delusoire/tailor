@@ -38,29 +38,47 @@ declare const MAP: ${genType(mapping)};
 
 import open from "npm:open@10.1.0";
 
-type DebouncedTask = (delay: number) => void;
+function createPromise<T>(): PromiseWithResolvers<T> & { resolved: boolean; } {
+   return Object.assign(Promise.withResolvers<T>(), {
+      resolved: false
+   });
+}
 
-const debounceTask = (task: () => void): DebouncedTask => {
-   let expireAfter = 0;
+type Task = () => Promise<void>;
+type DebouncedTask = (delay: number) => Promise<void>;
+export const debounceTask = (task: Task): DebouncedTask => {
+   let p = createPromise<void>();
+   let currentWaitUntil = Date.now();
+
    let timeoutId: number | null;
    return (delay: number) => {
-      const _expireAfter = Date.now() + delay;
-      if (expireAfter >= _expireAfter) {
-         return;
+      const waitUntil = Date.now() + delay;
+      if (!p.resolved || currentWaitUntil >= waitUntil) {
+         return p.promise;
       }
-      expireAfter = _expireAfter;
+      currentWaitUntil = waitUntil;
       timeoutId && clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
          timeoutId = null;
-         task();
+
+         task()
+            .then(() => p.resolve())
+            .catch(e => p.reject(e))
+            .finally(() => {
+               p.resolved = true;
+
+               p = createPromise<void>();
+               currentWaitUntil = Date.now();
+            });
       }, delay);
+      return p.promise;
    };
 };
 
 export const getDebouncedReloadModuleTask: (module?: string | undefined | null) => DebouncedTask = (module?: string | undefined | null) => {
    const reloadRpcScheme = "spotify:app:rpc:reload";
    const url = module == null ? reloadRpcScheme : `${reloadRpcScheme}?module=${module}`;
-   return debounceTask(() => open(url));
+   return debounceTask(() => open(url) as Promise<any>);
 };
 
 export async function build(builder: Builder) {
@@ -75,16 +93,17 @@ export async function watch(builder: Builder, debounce: number) {
    console.log("Watching for changes...");
 
    const module = builder.identifier;
-   const reloadRpcScheme = "spotify:app:rpc:reload";
-   const url = builder.identifier == null ? reloadRpcScheme : `${reloadRpcScheme}?module=${module}`;
-   const debouncedTask = debounceTask(async () => {
-      await builder.writeImportMap();
-      await open(url);
-   });
 
-   const onBuildPost = debounce < 0
-      ? () => { }
-      : () => { debouncedTask(debounce); };
+   const build = builder.build.bind(builder);
+   const reload = async () => {
+      const reloadRpcScheme = "spotify:app:rpc:reload";
+      const url = module == null ? reloadRpcScheme : `${reloadRpcScheme}?module=${module}`;
+      await open(url);
+   };
+   const debouncedBuild = debounceTask(async () => {
+      await build();
+      await reload();
+   });
 
    const watcher = Deno.watchFs(builder.inputDir);
    for await (const event of watcher) {
@@ -93,12 +112,8 @@ export async function watch(builder: Builder, debounce: number) {
             continue;
          }
 
-         const onBuildPre = () => {
-            console.log(`Building ${file}...`);
-            return true;
-         };
-
-         await builder.buildFile(file, onBuildPre, onBuildPost);
+         console.log(`Building ${file}...`);
+         debouncedBuild(debounce);
       }
    }
 }
