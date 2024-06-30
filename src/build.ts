@@ -13,16 +13,20 @@ export interface BuilderOpts {
    identifier: string;
    inputDir: string;
    outputDir: string;
-   copyUnknown: boolean;
+}
+
+export interface BuildOpts {
+   js?: boolean;
+   css?: boolean;
+   unknown?: boolean;
 }
 
 export class Builder {
-   scriptsInput?: Set<string>;
+   scriptsInput?: Array<string>;
    scssInput?: string;
    identifier: string;
    inputDir: string;
    outputDir: string;
-   copyUnknown: boolean;
 
    private static jsGlob = "./**/*.{ts,mjs,jsx,tsx}";
 
@@ -30,12 +34,11 @@ export class Builder {
       this.identifier = opts.identifier;
       this.inputDir = opts.inputDir;
       this.outputDir = opts.outputDir;
-      this.copyUnknown = opts.copyUnknown;
 
       const { js, css } = opts.metadata.entries;
       if (js) {
          const scriptWalkEntries = Array.from(expandGlobSync(Builder.jsGlob, { root: this.inputDir }));
-         this.scriptsInput = new Set(scriptWalkEntries.map(entry => entry.path));
+         this.scriptsInput = scriptWalkEntries.map(entry => entry.path);
       }
       if (css) {
          const cssInput = this.getAbsolutePath(css);
@@ -43,47 +46,46 @@ export class Builder {
       }
    }
 
-   public async parseFile(file: string) {
-      const relFile = this.getRelativePath(file);
-      const type = parseFileType(file);
-      switch (type) {
-         case FileType.JS:
-            this.scriptsInput?.add(relFile);
-            break;
-         case FileType.UNKNOWN:
-            this.copyUnknown && await this.copyFile(relFile);
-            break;
-      }
-   }
-
-   public async build(): Promise<void> {
+   public async build(opts: BuildOpts = {}): Promise<void> {
       const now = Date.now();
 
-      if (this.scriptsInput) {
-         this.scriptsInput = new Set;
-      }
+      const scriptsInput = [];
+      const unknownFiles = [];
 
+      const ps = [];
       {
-         const ps = [];
-
          const walker = walk(this.inputDir, { includeDirs: false });
          for await (const file of walker) {
-            ps.push(this.parseFile(file.path));
+            const path = file.path;
+            const relFile = this.getRelativePath(path);
+            const type = parseFileType(path);
+            switch (type) {
+               case FileType.ToJS:
+                  scriptsInput.push(path);
+                  break;
+               case FileType.UNKNOWN:
+                  unknownFiles.push(relFile);
+                  break;
+            }
          }
 
-         if (this.scriptsInput) {
+         if (opts.js && this.scriptsInput) {
             ps.push(this.js(now));
          }
-         if (this.scssInput) {
+         if (opts.css && this.scssInput) {
             ps.push(this.css());
          }
-
-         await Promise.all(ps);
+         if (opts.unknown) {
+            ps.push(...unknownFiles.map(f => this.copyFile(f)));
+         }
       }
 
-      const timestamp = this.getOutputPath("timestamp");
-      await ensureFile(timestamp);
-      await Deno.writeTextFile(timestamp, String(now));
+      await Promise.all(ps);
+      if (ps.length) {
+         const timestamp = this.getOutputPath("timestamp");
+         await ensureFile(timestamp);
+         await Deno.writeTextFile(timestamp, String(now));
+      }
    }
 
    public getRelativePath(abs: string): string {
@@ -126,9 +128,6 @@ export class Builder {
    }
 
    public async copyFile(rel: string): Promise<void> {
-      if (!this.copyUnknown) {
-         return Promise.reject("can't copy unknown files when copyUnknown is false");
-      }
       const input = this.getInputPath(rel);
       const output = this.getOutputPath(rel);
       await ensureFile(output);
@@ -136,15 +135,17 @@ export class Builder {
    }
 }
 
-enum FileType {
-   JS,
-   CSS,
+export enum FileType {
+   ToJS, ToCSS,
+   JS, CSS,
    UNKNOWN
 }
 
 export function parseFileType(relFile: string): FileType {
    switch (path.extname(relFile)) {
-      case ".js":
+      case ".js": {
+         return FileType.JS;
+      }
       // deno-lint-ignore no-fallthrough
       case ".ts":
          if (relFile.endsWith(".d.ts")) {
@@ -153,11 +154,13 @@ export function parseFileType(relFile: string): FileType {
       case ".mjs":
       case ".jsx":
       case ".tsx": {
-         return FileType.JS;
+         return FileType.ToJS;
       }
-      case ".css":
-      case ".scss": {
+      case ".css": {
          return FileType.CSS;
+      }
+      case ".scss": {
+         return FileType.ToCSS;
       }
    }
    return FileType.UNKNOWN;

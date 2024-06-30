@@ -1,5 +1,5 @@
 
-import type { Builder } from "./build.ts";
+import { FileType, parseFileType, type Builder, type BuildOpts } from "./build.ts";
 import type { Mapping } from "./transpile.ts";
 
 export async function readJSON<T>(path: string): Promise<T> {
@@ -53,7 +53,7 @@ export const debounceTask = (task: Task): DebouncedTask => {
    let timeoutId: number | null;
    return (delay: number) => {
       const waitUntil = Date.now() + delay;
-      if (!p.resolved || currentWaitUntil >= waitUntil) {
+      if ((timeoutId && !p.resolved) || currentWaitUntil >= waitUntil) {
          return p.promise;
       }
       currentWaitUntil = waitUntil;
@@ -81,10 +81,10 @@ export const getDebouncedReloadModuleTask: (module?: string | undefined | null) 
    return debounceTask(() => open(url) as Promise<any>);
 };
 
-export async function build(builder: Builder) {
+export async function build(builder: Builder, opts: BuildOpts = {}) {
    const timeStart = Date.now();
 
-   await builder.build();
+   await builder.build(opts);
 
    console.log(`Build finished in ${(Date.now() - timeStart) / 1000}s!`);
 }
@@ -94,22 +94,34 @@ export async function watch(builder: Builder, debounce: number) {
 
    const module = builder.identifier;
 
-   const build = builder.build.bind(builder);
    const reload = async () => {
       const reloadRpcScheme = "spotify:app:rpc:reload";
       const url = module == null ? reloadRpcScheme : `${reloadRpcScheme}?module=${module}`;
       await open(url);
    };
+
+   const opts: BuildOpts = {};
+
    const debouncedBuild = debounceTask(async () => {
-      await build();
+      console.log("Building...");
+      await build(builder, opts);
       await reload();
+      opts.js = opts.css = false;
    });
+
 
    const watcher = Deno.watchFs(builder.inputDir);
    for await (const event of watcher) {
       for (const file of event.paths) {
          if (event.kind !== "modify") {
             continue;
+         }
+
+         const type = parseFileType(file);
+         if (type === FileType.ToJS) {
+            opts.js = true;
+         } else if (type === FileType.ToCSS) {
+            opts.css = true;
          }
 
          console.log(`Building ${file}...`);

@@ -85,11 +85,10 @@ const builder = new Builder(transpiler, {
    identifier: argv.module,
    inputDir: argv.i,
    outputDir: argv.o,
-   copyUnknown: argv.copy
 });
 
 if (argv.b) {
-   await build(builder);
+   await build(builder, { js: true, css: true, unknown: argv.copy });
 }
 if (argv.w) {
    await watch(builder, argv.debounce);

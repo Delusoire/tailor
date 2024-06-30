@@ -1,3 +1,3 @@
-export { Builder, parseFileType, type BuilderOpts, type Metadata } from "./build.ts";
-export { Transpiler, type Mapping } from "./transpile.ts";
+export * from "./build.ts";
+export * from "./transpile.ts";
 export { build, getDebouncedReloadModuleTask, readJSON, watch, writeClassMapDts } from "./util.ts";
