@@ -54,6 +54,7 @@ function generateSwcOptions(opts: SwcOpts): swc.Options {
                      [`\.mts$`, ".js"],
                      [`\.jsx$`, ".js"],
                      [`\.tsx$`, ".js"],
+                     ...devRules,
                   ],
                }],
             ],
