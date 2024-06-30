@@ -21,8 +21,15 @@ export type { Mapping };
 interface SwcOpts {
    baseUrl: string;
    classmap: Mapping;
+   filepath: string;
+   timestamp: number;
+   dev: boolean;
 }
 function generateSwcOptions(opts: SwcOpts): swc.Options {
+   const devRules = opts.dev ? [
+      [`^(\.?\.\/.*)$`, `http://localhost:2077${opts.filepath}/../$1?t=${opts.timestamp}`],
+   ] as const : [];
+
    return ({
       isModule: true,
       module: {
@@ -74,12 +81,11 @@ function generateSwcOptions(opts: SwcOpts): swc.Options {
 export class Transpiler {
    public constructor(private classmap: Mapping, private dev: boolean) { }
 
-   public async js(input: string, output: string, baseUrl: string, filePath: string, timestamp: number) {
+   public async js(input: string, output: string, baseUrl: string, filepath: string, timestamp: number) {
       let program: string | swc.Program;
 
-
       const swc_options: swc.Options = Object.assign(
-         generateSwcOptions({ baseUrl, classmap: this.classmap }),
+         generateSwcOptions({ baseUrl, classmap: this.classmap, filepath, timestamp, dev: this.dev }),
          { filename: input, outputPath: output }
       );
 
@@ -90,9 +96,7 @@ export class Transpiler {
 
          // deno-lint-ignore no-inner-declarations
          async function remap(node: swc.StringLiteral) {
-            if (node.value.startsWith("./") || node.value.startsWith("../")) {
-               node.value = `http://localhost:2077${filePath}/../${node.value}?t=${timestamp}`;
-            } else if (node.value.startsWith("/modules/")) {
+            if (node.value.startsWith("/modules/")) {
                node.value = `http://localhost:2077${node.value}`;
                //! We should probably cache this
                const timestamp = await getTimestamp(node.value.slice("/modules".length));
@@ -102,6 +106,7 @@ export class Transpiler {
             }
          }
 
+         // TODO: remap dynamic imports
          for (const node of program.body) {
             switch (node.type) {
                case "ExportNamedDeclaration": {

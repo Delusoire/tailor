@@ -112,8 +112,8 @@ export class Builder {
          const rel = this.getRelativePath(input);
          const relJs = rel.slice(0, rel.lastIndexOf(".")) + ".js";
          const output = this.getOutputPath(relJs);
-         const filePath = `/modules${this.identifier}/${relJs}`;
-         await this.transpiler.js(input, output, this.inputDir, filePath, timestamp);
+         const filepath = `/modules${this.identifier}/${relJs}`;
+         await this.transpiler.js(input, output, this.inputDir, filepath, timestamp);
       }
    }
 
