@@ -1,6 +1,8 @@
+import { readJSON } from "./util.ts";
+
 const SPICETIFY_CONFIG_DIR = Deno.env.get("SPICETIFY_CONFIG_DIR");
-const vault = await import(`${SPICETIFY_CONFIG_DIR}/modules/vault.json`, { with: { type: "json" } });
-const modules = Object.keys(vault.default.modules).sort((a, b) => b.length - a.length);
+const vault = await readJSON<any>(`${SPICETIFY_CONFIG_DIR}/modules/vault.json`);
+const modules = Object.keys(vault.modules).sort((a, b) => b.length - a.length);
 
 function getModule(path: string) {
    path = path.slice("/modules".length);
