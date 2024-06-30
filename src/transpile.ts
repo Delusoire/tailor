@@ -27,7 +27,7 @@ interface SwcOpts {
 }
 function generateSwcOptions(opts: SwcOpts): swc.Options {
    const devRules = opts.dev ? [
-      [`^(\.?\.\/.*)$`, `http://localhost:2077${opts.filePath}$1`],
+      [`^(\.?\.\/.*)$`, `http://localhost:2077${opts.filePath}/../$1`],
       [`^(\/modules\/.*)$`, `http://localhost:2077$1`],
    ] as const : [];
 
