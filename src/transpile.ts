@@ -27,7 +27,7 @@ interface SwcOpts {
 }
 function generateSwcOptions(opts: SwcOpts): swc.Options {
    const devRules = opts.dev ? [
-      [`^(\.?\.\/.*)$`, `http://localhost:2077${opts.filepath}/../$1?t=${opts.timestamp}`],
+      [`^(\.?\.\/.*)$`, `$1?t=${opts.timestamp}`],
    ] as const : [];
 
    return ({
@@ -48,12 +48,12 @@ function generateSwcOptions(opts: SwcOpts): swc.Options {
                [fromFileUrl(swcPluginRemapper()), { mapping: { MAP: opts.classmap } }],
                [fromFileUrl(swcPluginTransformModuleSpecifiers()), {
                   rules: [
-                     [`\.js$`, ".js"],
-                     [`\.ts$`, ".js"],
-                     [`\.mjs$`, ".js"],
-                     [`\.mts$`, ".js"],
-                     [`\.jsx$`, ".js"],
-                     [`\.tsx$`, ".js"],
+                     [`\.js(\\?.*)?$`, ".js$1"],
+                     [`\.ts(\\?.*)?$`, ".js$1"],
+                     [`\.mjs(\\?.*)?$`, ".js$1"],
+                     [`\.mts(\\?.*)?$`, ".js$1"],
+                     [`\.jsx(\\?.*)?$`, ".js$1"],
+                     [`\.tsx(\\?.*)?$`, ".js$1"],
                      ...devRules,
                   ],
                }],
@@ -98,12 +98,12 @@ export class Transpiler {
          // deno-lint-ignore no-inner-declarations
          async function remap(node: swc.StringLiteral) {
             if (node.value.startsWith("/modules/")) {
-               node.value = `http://localhost:2077${node.value}`;
                //! We should probably cache this
-               const timestamp = await getTimestamp(node.value.slice("/modules".length));
+               const timestamp = await getTimestamp(node.value);
                if (timestamp) {
                   node.value += `?t=${timestamp}`;
                }
+               node.raw = node.value;
             }
          }
 
@@ -123,7 +123,7 @@ export class Transpiler {
                   break;
                }
                case "ImportDeclaration": {
-                  if (node.source.value.startsWith(".")) {
+                  if (node.source) {
                      await remap(node.source);
                   }
                   break;

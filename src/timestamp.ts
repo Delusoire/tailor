@@ -11,6 +11,6 @@ function getModule(path: string) {
 
 export function getTimestamp(path: string) {
    const module = getModule(path);
-   const timestamp = `./modules${module}/timestamp`;
+   const timestamp = `${SPICETIFY_CONFIG_DIR}/modules${module}/timestamp`;
    return Deno.readTextFile(timestamp).catch(() => null);
 }
