@@ -3,8 +3,7 @@ import path from "node:path";
 import { ensureFile } from "jsr:@std/fs@1.0.0-rc.2/ensure-file";
 import { fromFileUrl } from "jsr:@std/path@1.0.0-rc.2/from-file-url";
 
-import swc from "npm:@swc/core@1.5.29";
-// import type { Options as SwcOptions } from "npm:@swc/core@1.5.29";
+import swc from "npm:@swc/core@1.6.6";
 import postcss from "npm:postcss@8.4.38";
 
 import postcssPluginRemapper, {
@@ -16,22 +15,15 @@ import autoprefixer from "npm:autoprefixer@10.4.19";
 import atImport from "npm:postcss-import@16.1.0";
 import tailwindcss from "npm:tailwindcss@3.4.3";
 import tailwindcssNesting from "npm:tailwindcss@3.4.3/nesting/index.js";
+import { getTimestamp } from "./timestamp.ts";
 
 export type { Mapping };
 
 interface SwcOpts {
    baseUrl: string;
-   filePath: string;
-   timestamp: number;
    classmap: Mapping;
-   dev: boolean;
 }
 function generateSwcOptions(opts: SwcOpts): swc.Options {
-   const devRules = opts.dev ? [
-      [`^(\.?\.\/.*)$`, `http://localhost:2077${opts.filePath}/../$1?t=${opts.timestamp}`],
-      [`^(\/modules\/.*)$`, `http://localhost:2077$1`],
-   ] as const : [];
-
    return ({
       isModule: true,
       module: {
@@ -56,7 +48,6 @@ function generateSwcOptions(opts: SwcOpts): swc.Options {
                      [`\.mts$`, ".js"],
                      [`\.jsx$`, ".js"],
                      [`\.tsx$`, ".js"],
-                     ...devRules
                   ],
                }],
             ],
@@ -85,12 +76,58 @@ export class Transpiler {
    public constructor(private classmap: Mapping, private dev: boolean) { }
 
    public async js(input: string, output: string, baseUrl: string, filePath: string, timestamp: number) {
-      const buffer = await Deno.readTextFile(input);
+      let program: string | swc.Program;
+
+
       const swc_options: swc.Options = Object.assign(
-         generateSwcOptions({ baseUrl, filePath, timestamp, classmap: this.classmap, dev: this.dev }),
+         generateSwcOptions({ baseUrl, classmap: this.classmap }),
          { filename: input, outputPath: output }
       );
-      const { code } = await swc.transform(buffer, swc_options);
+
+      if (this.dev) {
+         program = await swc.parseFile(input, { syntax: "typescript", tsx: true, decorators: true, comments: true, script: false, target: "esnext" });
+
+         // deno-lint-ignore no-inner-declarations
+         async function remap(node: swc.StringLiteral) {
+            if (node.value.startsWith("./") || node.value.startsWith("../")) {
+               node.value = `http://localhost:2077${filePath}/../${node.value}?t=${timestamp}`;
+            } else if (node.value.startsWith("/modules/")) {
+               node.value = `http://localhost:2077${node.value}`;
+               //! We should probably cache this
+               const timestamp = await getTimestamp(node.value.slice("/modules".length));
+               if (timestamp) {
+                  node.value += `?t=${timestamp}`;
+               }
+            }
+         }
+
+         for (const node of program.body) {
+            switch (node.type) {
+               case "ExportNamedDeclaration": {
+                  if (node.source) {
+                     await remap(node.source);
+                  }
+                  break;
+               }
+               case "ExportAllDeclaration": {
+                  if (node.source) {
+                     await remap(node.source);
+                  }
+                  break;
+               }
+               case "ImportDeclaration": {
+                  if (node.source.value.startsWith(".")) {
+                     await remap(node.source);
+                  }
+                  break;
+               }
+            }
+         }
+      } else {
+         program = await Deno.readTextFile(input);
+      }
+
+      const { code } = await swc.transform(program, swc_options);
       await ensureFile(output);
       await Deno.writeTextFile(output, code);
    }
