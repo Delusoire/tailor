@@ -83,14 +83,12 @@ export class Transpiler {
    private swc_options!: swc.Options;
    public constructor(private classmap: Mapping, private dev: boolean) { }
 
-   public init(baseUrl: string) {
-      const timestamp = Date.now();
-      this.swc_options = generateSwcOptions({ baseUrl, classmap: this.classmap, timestamp, dev: this.dev });
-   }
-
-   public async js(input: string, output: string) {
+   public async js(input: string, output: string, baseUrl: string, timestamp: number = 0) {
       const buffer = await Deno.readTextFile(input);
-      const swc_options = Object.assign(this.swc_options, { filename: input, outputPath: output });
+      const swc_options = Object.assign(
+         generateSwcOptions({ baseUrl, classmap: this.classmap, timestamp, dev: this.dev }),
+         { filename: input, outputPath: output }
+      );
       const { code } = await swc.transform(buffer, swc_options);
       await ensureFile(output);
       await Deno.writeTextFile(output, code);

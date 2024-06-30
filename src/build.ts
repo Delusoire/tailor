@@ -41,8 +41,6 @@ export class Builder {
          const cssInput = this.getAbsolutePath(css);
          this.scssInput = cssInput.replace(/\.css$/, ".scss");
       }
-
-      transpiler.init(this.inputDir);
    }
 
    public async parseFile(file: string) {
@@ -74,7 +72,7 @@ export class Builder {
          }
 
          if (this.scriptsInput) {
-            ps.push(this.js());
+            ps.push(this.js(now));
          }
          if (this.scssInput) {
             ps.push(this.css());
@@ -104,7 +102,7 @@ export class Builder {
       return path.join(this.outputDir, relToProj);
    }
 
-   public async js(): Promise<void> {
+   public async js(timestamp: number = 0): Promise<void> {
       if (!this.scriptsInput) {
          return Promise.reject("couldn't find any entrypoint for js");
       }
@@ -112,7 +110,7 @@ export class Builder {
          const rel = this.getRelativePath(input);
          const relJs = rel.slice(0, rel.lastIndexOf(".")) + ".js";
          const output = this.getOutputPath(relJs);
-         await this.transpiler.js(input, output);
+         await this.transpiler.js(input, output, this.inputDir, timestamp);
       }
    }
 
