@@ -4,6 +4,7 @@ import { ensureFile } from "jsr:@std/fs@1.0.0-rc.2/ensure-file";
 import { fromFileUrl } from "jsr:@std/path@1.0.0-rc.2/from-file-url";
 
 import swc from "npm:@swc/core@1.5.29";
+// import type { Options as SwcOptions } from "npm:@swc/core@1.5.29";
 import postcss from "npm:postcss@8.4.38";
 
 import postcssPluginRemapper, {
@@ -24,7 +25,7 @@ interface SwcOpts {
    timestamp: number;
    dev: boolean;
 }
-function generateSwcOptions(opts: SwcOpts) {
+function generateSwcOptions(opts: SwcOpts): swc.Options {
    const devRules = opts.dev ? [
       [`^(\.?\.\/.*)$`, `$1?t=${opts.timestamp}`],
       [`^(\/modules\/.*)$`, `http://localhost:2077$1`],
@@ -80,12 +81,11 @@ function generateSwcOptions(opts: SwcOpts) {
 }
 
 export class Transpiler {
-   private swc_options!: swc.Options;
    public constructor(private classmap: Mapping, private dev: boolean) { }
 
    public async js(input: string, output: string, baseUrl: string, timestamp: number = 0) {
       const buffer = await Deno.readTextFile(input);
-      const swc_options = Object.assign(
+      const swc_options: swc.Options = Object.assign(
          generateSwcOptions({ baseUrl, classmap: this.classmap, timestamp, dev: this.dev }),
          { filename: input, outputPath: output }
       );
