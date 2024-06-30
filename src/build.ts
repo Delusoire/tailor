@@ -70,7 +70,7 @@ export class Builder {
          }
 
          if (opts.js && this.scriptsInput) {
-            ps.push(this.js());
+            ps.push(this.js(now));
          }
          if (opts.css && this.scssInput) {
             ps.push(this.css());
@@ -104,7 +104,7 @@ export class Builder {
       return path.join(this.outputDir, relToProj);
    }
 
-   public async js(): Promise<void> {
+   public async js(timestamp: number = 0): Promise<void> {
       if (!this.scriptsInput) {
          return Promise.reject("couldn't find any entrypoint for js");
       }
@@ -113,7 +113,7 @@ export class Builder {
          const relJs = rel.slice(0, rel.lastIndexOf(".")) + ".js";
          const output = this.getOutputPath(relJs);
          const filePath = `/modules${this.identifier}/${relJs}`;
-         await this.transpiler.js(input, output, this.inputDir, filePath);
+         await this.transpiler.js(input, output, this.inputDir, filePath, timestamp);
       }
    }
 

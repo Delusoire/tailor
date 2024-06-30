@@ -22,12 +22,13 @@ export type { Mapping };
 interface SwcOpts {
    baseUrl: string;
    filePath: string;
+   timestamp: number;
    classmap: Mapping;
    dev: boolean;
 }
 function generateSwcOptions(opts: SwcOpts): swc.Options {
    const devRules = opts.dev ? [
-      [`^(\.?\.\/.*)$`, `http://localhost:2077${opts.filePath}/../$1`],
+      [`^(\.?\.\/.*)$`, `http://localhost:2077${opts.filePath}/../$1?t=${opts.timestamp}`],
       [`^(\/modules\/.*)$`, `http://localhost:2077$1`],
    ] as const : [];
 
@@ -83,10 +84,10 @@ function generateSwcOptions(opts: SwcOpts): swc.Options {
 export class Transpiler {
    public constructor(private classmap: Mapping, private dev: boolean) { }
 
-   public async js(input: string, output: string, baseUrl: string, filePath: string) {
+   public async js(input: string, output: string, baseUrl: string, filePath: string, timestamp: number) {
       const buffer = await Deno.readTextFile(input);
       const swc_options: swc.Options = Object.assign(
-         generateSwcOptions({ baseUrl, filePath, classmap: this.classmap, dev: this.dev }),
+         generateSwcOptions({ baseUrl, filePath, timestamp, classmap: this.classmap, dev: this.dev }),
          { filename: input, outputPath: output }
       );
       const { code } = await swc.transform(buffer, swc_options);
