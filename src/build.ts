@@ -80,11 +80,15 @@ export class Builder {
          }
       }
 
-      await Promise.all(ps);
       if (ps.length) {
          const timestamp = this.getOutputPath("timestamp");
-         await ensureFile(timestamp);
-         await Deno.writeTextFile(timestamp, String(now));
+         if (this.transpiler.dev) {
+            await ensureFile(timestamp);
+            await Deno.writeTextFile(timestamp, String(now));
+         } else {
+            await Deno.remove(timestamp);
+         }
+         await Promise.all(ps);
       }
    }
 

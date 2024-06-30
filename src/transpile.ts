@@ -80,7 +80,7 @@ function generateSwcOptions(opts: SwcOpts): swc.Options {
 }
 
 export class Transpiler {
-   public constructor(private classmap: Mapping, private dev: boolean) { }
+   public constructor(private classmap: Mapping, public dev: boolean) { }
 
    public async js(input: string, output: string, baseUrl: string, filepath: string, timestamp: number) {
       let program: string | swc.Program;
