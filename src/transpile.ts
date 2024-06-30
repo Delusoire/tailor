@@ -15,7 +15,6 @@ import autoprefixer from "npm:autoprefixer@10.4.19";
 import atImport from "npm:postcss-import@16.1.0";
 import tailwindcss from "npm:tailwindcss@3.4.3";
 import tailwindcssNesting from "npm:tailwindcss@3.4.3/nesting/index.js";
-import { getTimestamp } from "./timestamp.ts";
 
 export type { Mapping };
 
@@ -85,6 +84,8 @@ export class Transpiler {
       );
 
       if (this.dev) {
+         const { getTimestamp } = await import("./timestamp.ts");
+
          program = await swc.parseFile(input, { syntax: "typescript", tsx: true, decorators: true, comments: true, script: false, target: "esnext" });
 
          // deno-lint-ignore no-inner-declarations
