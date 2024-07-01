@@ -1,3 +1,4 @@
+import open from "npm:open@10.1.0";
 
 import { FileType, parseFileType, type Builder, type BuildOpts } from "./build.ts";
 import type { Mapping } from "./transpile.ts";
@@ -32,8 +33,6 @@ declare const MAP: ${genType(mapping)};
 `;
    return dts;
 }
-
-import open from "npm:open@10.1.0";
 
 function createPromise<T>(): PromiseWithResolvers<T> & { resolved: boolean; } {
    return Object.assign(Promise.withResolvers<T>(), {
