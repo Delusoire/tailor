@@ -7,7 +7,7 @@ import { Transpiler, type Mapping } from "./transpile.ts";
 
 // @deno-types="npm:@types/yargs@17.0.32"
 import yargs from 'npm:yargs@17.7.2';
-import { build, readJSON, watch, writeClassMapDts } from "./util.ts";
+import { build, readJSON, watch, genClassMapDts } from "./util.ts";
 
 const argv = await yargs(Deno.args)
    .version(pkg.version)
@@ -38,7 +38,7 @@ const argv = await yargs(Deno.args)
       alias: "declaration",
       type: "boolean",
       default: false,
-      desc: "emit declaration"
+      desc: "emit classmap declaration file"
    })
    .option("b", {
       alias: "build",
@@ -75,10 +75,6 @@ if (argv.c) {
 }
 const metadata = await readJSON<Metadata>(path.join(argv.i, "metadata.json"));
 
-if (argv.d) {
-   await writeClassMapDts(classmap);
-}
-
 const transpiler = new Transpiler(classmap, argv.dev);
 const builder = new Builder(transpiler, {
    metadata,
@@ -86,6 +82,12 @@ const builder = new Builder(transpiler, {
    inputDir: argv.i,
    outputDir: argv.o,
 });
+
+if (argv.d) {
+   const dts = genClassMapDts(classmap);
+   console.log("Writing classmap declaration...");
+   await Deno.writeTextFile(builder.getInputPath("classmap.d.ts"), dts);
+}
 
 if (argv.b) {
    await build(builder, { js: true, css: true, unknown: argv.copy });

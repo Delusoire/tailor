@@ -106,11 +106,11 @@ export class Builder {
       return path.resolve(this.inputDir, rel);
    }
 
-   private getInputPath(relToProj: string) {
+   public getInputPath(relToProj: string): string {
       return path.join(this.inputDir, relToProj);
    }
 
-   private getOutputPath(relToProj: string) {
+   public getOutputPath(relToProj: string): string {
       return path.join(this.outputDir, relToProj);
    }
 

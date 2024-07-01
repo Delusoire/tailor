@@ -7,7 +7,7 @@ export async function readJSON<T>(path: string): Promise<T> {
    return JSON.parse(file) as T;
 }
 
-export function writeClassMapDts(mapping: Mapping): Promise<void> {
+export function genClassMapDts(mapping: Mapping): string {
    function genType(obj: any) {
       let s = "";
 
@@ -30,10 +30,7 @@ export function writeClassMapDts(mapping: Mapping): Promise<void> {
 
 declare const MAP: ${genType(mapping)};
 `;
-
-   console.log("Writing classmap declaration...");
-
-   return Deno.writeTextFile("./classmap.d.ts", dts);
+   return dts;
 }
 
 import open from "npm:open@10.1.0";
