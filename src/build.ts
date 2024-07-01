@@ -70,10 +70,10 @@ export class Builder {
          }
 
          if (opts.js && this.scriptsInput) {
-            ps.push(this.js(now));
+            ps.push(this.js(scriptsInput, now));
          }
          if (opts.css && this.scssInput) {
-            ps.push(this.css());
+            ps.push(this.css(this.scssInput));
          }
          if (opts.unknown) {
             ps.push(...unknownFiles.map(f => this.copyFile(f)));
@@ -114,11 +114,8 @@ export class Builder {
       return path.join(this.outputDir, relToProj);
    }
 
-   public async js(timestamp: number = 0): Promise<void> {
-      if (!this.scriptsInput) {
-         return Promise.reject("couldn't find any entrypoint for js");
-      }
-      for (const input of this.scriptsInput) {
+   public async js(inputs: string[], timestamp: number = 0): Promise<void> {
+      for (const input of inputs) {
          const rel = this.getRelativePath(input);
          const relJs = rel.slice(0, rel.lastIndexOf(".")) + ".js";
          const output = this.getOutputPath(relJs);
@@ -127,11 +124,7 @@ export class Builder {
       }
    }
 
-   public async css(): Promise<void> {
-      if (!this.scssInput) {
-         return Promise.reject("couldn't find an entrypoint for css");
-      }
-      const input = this.scssInput;
+   public async css(input: string): Promise<void> {
       const rel = this.getRelativePath(input);
       const relCss = rel.slice(0, rel.lastIndexOf(".")) + ".css";
       const output = this.getOutputPath(relCss);
