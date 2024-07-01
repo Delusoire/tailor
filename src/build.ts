@@ -37,7 +37,7 @@ export class Builder {
 
       const { js, css } = opts.metadata.entries;
       if (js) {
-         const scriptWalkEntries = Array.from(expandGlobSync(Builder.jsGlob, { root: this.inputDir }));
+         const scriptWalkEntries = Array.from(expandGlobSync(Builder.jsGlob, { root: this.inputDir, includeDirs: false }));
          this.scriptsInput = scriptWalkEntries.map(entry => entry.path);
       }
       if (css) {
@@ -86,7 +86,13 @@ export class Builder {
             await ensureFile(timestamp);
             await Deno.writeTextFile(timestamp, String(now));
          } else {
-            await Deno.remove(timestamp);
+            try {
+               await Deno.remove(timestamp);
+            } catch (error) {
+               if (!(error instanceof Deno.errors.NotFound)) {
+                  throw error;
+               }
+            }
          }
          await Promise.all(ps);
       }
