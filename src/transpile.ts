@@ -27,7 +27,7 @@ interface SwcOpts {
 }
 function generateSwcOptions(opts: SwcOpts): swc.Options {
    const devRules = opts.dev ? [
-      [`^(\.?\.\/.*)$`, `$1?t=${opts.timestamp}`],
+      [`^(\\.?\\.\\/.*)$`, `$1?t=${opts.timestamp}`],
    ] as const : [];
 
    return ({
@@ -48,12 +48,12 @@ function generateSwcOptions(opts: SwcOpts): swc.Options {
                [fromFileUrl(swcPluginRemapper()), { mapping: { MAP: opts.classmap } }],
                [fromFileUrl(swcPluginTransformModuleSpecifiers()), {
                   rules: [
-                     [`\.js(\\?.*)?$`, ".js$1"],
-                     [`\.ts(\\?.*)?$`, ".js$1"],
-                     [`\.mjs(\\?.*)?$`, ".js$1"],
-                     [`\.mts(\\?.*)?$`, ".js$1"],
-                     [`\.jsx(\\?.*)?$`, ".js$1"],
-                     [`\.tsx(\\?.*)?$`, ".js$1"],
+                     [`\\.js(\\?.*)?$`, ".js$1"],
+                     [`\\.ts(\\?.*)?$`, ".js$1"],
+                     [`\\.mjs(\\?.*)?$`, ".js$1"],
+                     [`\\.mts(\\?.*)?$`, ".js$1"],
+                     [`\\.jsx(\\?.*)?$`, ".js$1"],
+                     [`\\.tsx(\\?.*)?$`, ".js$1"],
                      ...devRules,
                   ],
                }],
